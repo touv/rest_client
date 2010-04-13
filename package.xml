@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package packagerversion="1.5.0" version="2.0" xmlns="http://pear.php.net/dtd/package-2.0" xmlns:tasks="http://pear.php.net/dtd/tasks-1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://pear.php.net/dtd/tasks-1.0 http://pear.php.net/dtd/tasks-1.0.xsd http://pear.php.net/dtd/package-2.0 http://pear.php.net/dtd/package-2.0.xsd">
+	<name>REST_Client</name>
+	<channel>pear.pxxo.net</channel>
+	<summary>REST_Client</summary>
+	<description>
+		http://github.com/touv/rest_client/tree/master
+	</description>
+	<lead>
+		<name>Nicolas Thouvenin</name>
+		<user>touv</user>
+		<email>nthouvenin@gmail.com</email>
+		<active>yes</active>
+	</lead>
+	<date>2010-04-13</date>
+	<version>
+		<release>1.0.0</release>
+		<api>1.0</api>
+	</version>
+	<stability>
+		<release>stable</release>
+		<api>stable</api>
+	</stability>
+	<license uri="http://opensource.org/licenses/bsd-license.php">BSD Licence</license>
+	<notes>
+        first release
+	</notes>
+	<contents>
+		<dir name="/">
+			<dir name="Rest">
+				<file name="Client.php" role="php" />
+				<file name="Response.php" role="php" />
+			</dir>
+		</dir>
+	</contents>
+	<dependencies>
+		<required>
+			<php>
+				<min>5.1.0</min>
+			</php>
+			<pearinstaller>
+				<min>1.4.0b1</min>
+			</pearinstaller>
+		</required>
+		<optional />
+	</dependencies>
+	<phprelease />
+	<changelog />
+</package>

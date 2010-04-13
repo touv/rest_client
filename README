@@ -1,0 +1,55 @@
+REST_Client
+===========
+
+Description
+-----------
+
+It's a PEAR package that provide a simple REST client.
+
+
+Installation
+------------
+
+pear channel-discover pear.pxxo.net
+pear install pxxo/REST_Client
+
+
+Usage
+-----
+
+<?php
+
+require_once "REST/Client.php';
+
+$rs = new REST_Client('rest.server.com', 8080);
+
+// GET Method
+$o = $rs->get('/path/to/get')
+
+// check network error
+if ($o->isError()) die($o->error);
+
+// check http response code
+if ($o->code == 404) die('Oups, where is my page ?');
+
+// the content of the page
+echo $o->content;
+
+// DELETE Method
+$o = $rs->delete('/path/to/delete');
+
+// POST Method
+
+// $data can be a array or a string chars
+$data = array('key' => 'value');
+$o = $rs->post('/path/to/post', $data)
+
+// PUT Method
+$data = '<xml>some data</xml>';
+$o = $rs->put('/path/to/put', $data);
+
+// Retrieve HTTP headers
+echo $o->headers['x-powered-by'];
+echo $o->headers['location'];
+
+?>

@@ -5,7 +5,11 @@ CP=cp
 MKDIR=mkdir
 RM=rm
 
-all : test
+all : 
+	@echo "try :"
+	@echo "make release "
+	@echo "make push"
+
 
 #test :
 #	$(PHPUNIT) Text_NormalizeTest Text/NormalizeTest.php

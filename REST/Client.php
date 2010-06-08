@@ -49,19 +49,22 @@ require_once 'REST/Response.php';
  */
 class REST_Client
 {
+    static $version = '1.1';
     private $options;
     private $handle;
     private $host;
+    private $base;
 
     function __construct($host, $port = 80, $options = array())
     {
         $this->host = $host;
+        $this->base = 'http://'.$this->host.':'.$port;
         $this->options = array(
             CURLOPT_PORT           => $port,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_HEADER         => true,
-            CURLOPT_USERAGENT      => 'REST_Client',
+            CURLOPT_USERAGENT      => 'REST_Client/'.self::$version,
             //            CURLOPT_MAXREDIRS      => 0,
             //            CURLOPT_HEADER         => false,
             //            CURLOPT_FOLLOWLOCATION => true,
@@ -70,76 +73,54 @@ class REST_Client
             //            CURLOPT_AUTOREFERER    => true,
             //            CURLOPT_CONNECTTIMEOUT => 120,
             //            CURLOPT_TIMEOUT        => 120,
-            //            CURLOPT_POST            => 1,
-            //            CURLOPT_POSTFIELDS     => $curl_data,
             //            CURLOPT_SSL_VERIFYHOST => 0,
             //            CURLOPT_SSL_VERIFYPEER => false,
             //            CURLOPT_VERBOSE        => 1
         ) + $options;
+        $this->handle = curl_init();
     }
 
-    public function get($upath)
+    function __destruct() 
     {
-        if (!is_resource($this->handle))
-            $this->handle = curl_init();
-
-        $options = array(
-            CURLOPT_URL => $this->upath2url($upath),
-        );
-        curl_setopt_array($this->handle, $this->options + $options);
-
-        return $this->send();
+        curl_close($this->handle);
     }
 
-    public function delete($upath)
+    public function __call($method, $arguments) 
     {
+        if (count($arguments) === 0)
+            return trigger_error(sprintf('REST_Client::%s() expects at least 1 parameter, 0 given', $method), E_USER_WARNING);
+
+        if (!is_string($arguments[0]))
+            return trigger_error(sprintf('REST_Client::%s() expects parameter 1 to be string, %s given', $method, gettype($arguments[0])), E_USER_WARNING);
+
+        $url = trim($arguments[0]);
+        if ($url === '')
+            return trigger_error(sprintf('REST_Client::%s() expects parameter 1 to be not empty', $method), E_USER_WARNING);
+
         if (!is_resource($this->handle))
-            $this->handle = curl_init();
+            return trigger_error(sprintf('REST_Client::%s() cURL session was lost', $method), E_USER_ERROR);
 
-        $options = array(
-            CURLOPT_URL           => $this->upath2url($upath),
-            CURLOPT_CUSTOMREQUEST => 'DELETE',
-        );
-        curl_setopt_array($this->handle, $this->options + $options);
+        $method  = strtoupper($method);
+        $data    = isset($arguments[1]) ? $arguments[1] : null;
+        $options = array();
 
-        return $this->send();
-    }
+        var_export($method);
+        var_export($data);
 
+        if (strpos($url, $this->base) === false)
+            $options[CURLOPT_URL] = $this->base.$url;
+        else 
+            $options[CURLOPT_URL] = $url;
 
-    public function post($upath, $data, $params = array())
-    {
-        if (!is_resource($this->handle))
-            $this->handle = curl_init();
-        $options = array(
-            CURLOPT_URL             => $this->upath2url($upath, $params),
-            CURLOPT_POST            => true,
-            CURLOPT_POSTFIELDS      => $data,
-        );
+        $options[CURLOPT_CUSTOMREQUEST] = $method;
 
-        curl_setopt_array($this->handle, $this->options + $options);
-
-        return $this->send();
-    }
-
-    public function put($upath, $data, $params = array())
-    {
-        if (!is_resource($this->handle))
-            $this->handle = curl_init();
-
-        $options = array(
-            CURLOPT_URL             => $this->upath2url($upath, $params),
-            CURLOPT_CUSTOMREQUEST   => 'PUT',
-            CURLOPT_POSTFIELDS      => $data,
-        );
+        if (!is_null($data) and $data !== '')
+            $options[CURLOPT_POSTFIELDS] = $data;
+        if ($method === 'POST')
+            $options[CURLOPT_POST] = true;
 
         curl_setopt_array($this->handle, $this->options + $options);
 
-        return $this->send();
-    }
-
-
-    protected function send()
-    {
         $r = new REST_Response(curl_exec($this->handle), curl_errno($this->handle));
         if ($r->isError()) {
             $r->error = curl_error($this->handle);
@@ -148,18 +129,12 @@ class REST_Client
             $r->code = curl_getinfo($this->handle, CURLINFO_HTTP_CODE);
             $r->type = curl_getinfo($this->handle, CURLINFO_CONTENT_TYPE);
         }
-        curl_close($this->handle);
         return $r;
     }
 
-
-    protected function upath2url($upath)
+    public function setAuth($user, $password)
     {
-        $h = 'http://'.$this->host.':'.$this->options[CURLOPT_PORT];
-        if (strpos($upath, $h) === 0)
-            return $upath;
-        else
-            return $h.$upath;
+        $this->options[CURLOPT_USERPWD] = $user.':'.$password;
+        return $this;
     }
-
 }

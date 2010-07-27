@@ -37,11 +37,8 @@
  * @license   http://opensource.org/licenses/bsd-license.php BSD Licence
  */
 
-require_once 'REST/Response.php';
-require_once 'REST/Request.php';
-
 /**
- * a simple REST Client in PHP
+ * Request class
  *
  * @category  REST
  * @package   REST_Client
@@ -49,47 +46,71 @@ require_once 'REST/Request.php';
  * @copyright 2010 Nicolas Thouvenin
  * @license   http://opensource.org/licenses/bsd-license.php BSD Licence
  */
-class REST_Client
+class REST_Request
 {
-    static $version = '1.1';
-    private $handle;
-    public $request;
+    protected $options;
+    protected $host;
+    protected $base;
 
     function __construct($host, $port = 80, $options = array())
     {
-        $this->request = new REST_Request(
-            $host, 
-            $port, 
-            array(CURLOPT_USERAGENT => 'REST_Client/'.self::$version)+$options
-        );
-        $this->handle = curl_init();
-    }
-
-    function __destruct() 
-    {
-        curl_close($this->handle);
+        $this->host = $host;
+        $this->base = 'http://'.$this->host.':'.$port;
+        $this->options = array(
+            CURLOPT_PORT           => $port,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_HEADER         => true,
+            //            CURLOPT_USERAGENT      => 'REST/1.0',
+            //            CURLOPT_MAXREDIRS      => 0,
+            //            CURLOPT_HEADER         => false,
+            //            CURLOPT_FOLLOWLOCATION => true,
+            //            CURLOPT_ENCODING       => "",
+            //            CURLOPT_USERAGENT      => "spider",
+            //            CURLOPT_AUTOREFERER    => true,
+            //            CURLOPT_CONNECTTIMEOUT => 120,
+            //            CURLOPT_TIMEOUT        => 120,
+            //            CURLOPT_SSL_VERIFYHOST => 0,
+            //            CURLOPT_SSL_VERIFYPEER => false,
+            //            CURLOPT_VERBOSE        => 1
+        ) + $options;
     }
 
     public function __call($method, $arguments) 
     {
-        curl_setopt_array($this->handle, $this->request->__call($method, $arguments));
+        if (count($arguments) === 0)
+            return trigger_error(sprintf('%s::%s() expects at least 1 parameter, 0 given', __CLASS__, $method), E_USER_WARNING);
 
-        if (!is_resource($this->handle))
-            return trigger_error(sprintf('%s::%s() cURL session was lost', __CLASS__, $method), E_USER_ERROR);
+        if (!is_string($arguments[0]))
+            return trigger_error(sprintf('%s::%s() expects parameter 1 to be string, %s given', __CLASS__, $method, gettype($arguments[0])), E_USER_WARNING);
 
-        $r = new REST_Response(curl_exec($this->handle), curl_errno($this->handle));
-        if ($r->isError()) {
-            $r->error = curl_error($this->handle);
-        }
-        else foreach(REST_Response::$properties as $name => $const) {
-            $r->$name = curl_getinfo($this->handle, $const);
-        }
-        return $r;
+        $url = trim($arguments[0]);
+        if ($url === '')
+            return trigger_error(sprintf('%s::%s() expects parameter 1 to be not empty', __CLASS__, $method), E_USER_WARNING);
+
+
+        $method  = strtoupper($method);
+        $data    = isset($arguments[1]) ? $arguments[1] : null;
+        $options = array();
+
+        if (strpos($url, $this->base) === false)
+            $options[CURLOPT_URL] = $this->base.$url;
+        else 
+            $options[CURLOPT_URL] = $url;
+
+        $options[CURLOPT_CUSTOMREQUEST] = $method;
+
+        if (!is_null($data) and $data !== '')
+            $options[CURLOPT_POSTFIELDS] = $data;
+        if ($method === 'POST')
+            $options[CURLOPT_POST] = true;
+
+        return $this->options + $options;
     }
 
     public function setAuth($user, $password)
     {
-        $this->request->setAuth($user, $password);
+        $this->options[CURLOPT_USERPWD] = $user.':'.$password;
         return $this;
     }
 }

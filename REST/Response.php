@@ -48,11 +48,20 @@
  */
 class REST_Response
 {
+    static $properties = array(  
+        'code'  => CURLINFO_HTTP_CODE,  
+        'time'  => CURLINFO_TOTAL_TIME,  
+        'length'=> CURLINFO_CONTENT_LENGTH_DOWNLOAD,  
+        'type'  => CURLINFO_CONTENT_TYPE  
+    );
     public $headers = array();
     public $content = '';
     public $code = 0;
     public $type;
+    public $time;
+    public $length;
     public $error = '';
+
 
     private $errno = false;
 

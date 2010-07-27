@@ -11,8 +11,12 @@ all :
 	@echo "make push"
 
 
-#test :
-#	$(PHPUNIT) Text_NormalizeTest Text/NormalizeTest.php
+test : REST_ClientTest REST_PullerTest
+
+REST_ClientTest:
+	$(PHPUNIT) $@ REST/ClientTest.php
+REST_PullerTest:
+	$(PHPUNIT) $@ REST/PullerTest.php
 
 push:
 	git push --tags

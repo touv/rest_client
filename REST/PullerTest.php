@@ -9,22 +9,43 @@ require_once 'REST/Request.php';
 
 class REST_PullerTest extends PHPUnit_Framework_TestCase
 {
-    function test_get()
+    private $p;
+    function setUp()
     {
-        $p = new REST_Puller(array(
-            'max_clients' => 2,
+        $this->p = new REST_Puller(array(
+//            'debug' => true,
         ));
+    }
+    function tearDown()
+    {
+//        var_dump($this->p->getInfo());
+        $this->p = null;
+    }
+
+    function test_small()
+    {
+        $r = new REST_Request('localhost', 8000);
+        $this->p->fire($r->get('/'));
+        if (list(, $h) = $this->p->fetch()) 
+            $this->assertEquals(200, $h->code);
+        $this->assertEquals(1, $this->p->getInfo('requests'));
+    }
+
+    function test_medium()
+    {
+        $this->p->setOption('queue_size', 3);
+
         $r = new REST_Request('fr.php.net');
-        $dom     = $p->fire($r->get('/dom'));
-        $curl    = $p->fire($r->get('/curl'));
-        $strings = $p->fire($r->get('/strings'));
-        $pcre    = $p->fire($r->get('/pcre'));
-        $xml     = $p->fire($r->get('/xml'));
-        $ftp     = $p->fire($r->get('/ftp'));
-        $sockets = $p->fire($r->get('/sockets'));
+        $dom     = $this->p->fire($r->get('/dom'));
+        $curl    = $this->p->fire($r->get('/curl'));
+        $strings = $this->p->fire($r->get('/strings'));
+        $pcre    = $this->p->fire($r->get('/pcre'));
+        $xml     = $this->p->fire($r->get('/xml'));
+        $ftp     = $this->p->fire($r->get('/ftp'));
+        $sockets = $this->p->fire($r->get('/sockets'));
 
         $z = array();
-        while(list($id, $response) = $p->fetch()) {
+        while(list($id, $response) = $this->p->fetch()) {
             $z[$id] = $response->content;
         }
         $this->assertContains('PHP: cURL - Manual', $z[$curl]);
@@ -34,20 +55,60 @@ class REST_PullerTest extends PHPUnit_Framework_TestCase
         $this->assertContains('id="book.xml"', $z[$xml]);
         $this->assertContains('PHP: FTP - Manual', $z[$ftp]);
         $this->assertContains('PHP: Sockets - Manual', $z[$sockets]);
+
+        $this->assertEquals(7, $this->p->getInfo('requests'));
     }
-    function test_huge()
+    function test_large()
     {
-        $p = new REST_Puller(array(
-            'max_clients' => 100,
-        ));
+        $requests = 2500;
+        $this->p->setOption('queue_size', 30);
+
         $r = new REST_Request('localhost', 8000);
-        for($i= 0;$i < 2500; $i++) {
-            $p->fire($r->get('/'));
+        for($i= 0;$i < $requests; $i++) {
+            $this->p->fire($r->get('/'));
         }
 
-        while(list(, $h) = $p->fetch()) {
+        while(list(, $h) = $this->p->fetch()) {
             $this->assertEquals(200, $h->code);
         }
+
+        $this->assertEquals($requests, $this->p->getInfo('requests'));
     }
+    function test_cool()
+    {
+        $requests = 2500;
+        $this->p->setOption('queue_size', 30);
+
+        $r = new REST_Request('localhost', 8000);
+        for($i= 0;$i < $requests; $i++) {
+            $this->p->fire($r->get('/'));
+            if ($i > 30) if (list(, $h) = $this->p->fetch()) 
+                $this->assertEquals(200, $h->code);
+        }
+        while(list(, $h) = $this->p->fetch()) {
+            $this->assertEquals(200, $h->code);
+        }
+
+        $this->assertEquals($requests, $this->p->getInfo('requests'));
+    }
+
+    function test_huge()
+    {
+        $requests = 10000;
+        $this->p->setOption('queue_size', 100);
+        $this->p->setOption('debug', true);
+
+        $r = new REST_Request('localhost', 8000);
+        for($i= 0;$i < $requests; $i++) {
+            $this->p->fire($r->get('/'));
+        }
+
+        while(list(, $h) = $this->p->fetch()) {
+            $this->assertEquals(200, $h->code);
+        }
+
+        $this->assertEquals($requests, $this->p->getInfo('requests'));
+    }
+
 
 }

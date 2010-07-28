@@ -48,23 +48,25 @@ require_once 'REST/Response.php';
  */
 class REST_Puller
 {
-
     protected $options = array(
-        'max_clients' => 5,
-        'fetch_delay' => 200000,
-        'debug'       => true,
+        'queue_size'  => null,
+        'fetch_delay' => 0,    
+        'pull_delay'  => 0,
+        'debug'       => null,
     );
-
+    protected $mh = null;
+    protected $running = 0;
     protected $stack = array();
-
     protected $requests = 0;
     protected $responses = 0;
     protected $handles = 0;
-    protected $mcurls = 0;
-
-    protected $mh = null;
-    protected $running = 0;
-
+    protected $loads = 0;
+    protected $loads_null = 0;
+    protected $fetchs = 0;
+    protected $fetchs_null = 0;
+    protected $pulls = 0;
+    protected $pulls_null = 0;
+    protected $flag = false;
 
     /**
      * Constructor
@@ -73,20 +75,56 @@ class REST_Puller
     function __construct($options = array())
     {
         $this->options = array_merge($this->options, $options);
-        settype($this->options['max_clients'], 'integer');
-        settype($this->options['fetch_delay'], 'integer');
-        if ($this->options['max_clients'] <= 0) $this->options['max_clients'] = 5;
-        if ($this->options['fetch_delay'] < 0) $this->options['fetch_delay'] = 200000;
+
         $this->mh = curl_multi_init();
     }
 
     /**
+     * Destructor
+     */
+    function __destruct()
+    {
+        curl_multi_close($this->mh);
+    }
+
+    /**
+     * setOption
+     * @param string
+     * @param mixed
+     * @return boolean
+     */
+    public function setOption($name, $value)
+    {
+        if ($this->handles === 0) {
+            $this->options[$name] = $value;
+            return true;
+        }
+        else return false;
+    }
+
+    /**
+     * init
+     */
+    protected function init()
+    {
+        settype($this->options['queue_size'], 'integer');
+        settype($this->options['fetch_delay'], 'integer');
+        settype($this->options['pull_delay'], 'integer');
+        settype($this->options['debug'], 'boolean');
+
+        if ($this->options['queue_size'] <= 0) $this->options['queue_size'] = 10;
+        if ($this->options['fetch_delay'] < 0) $this->options['fetch_delay'] = 0;
+        if ($this->options['pull_delay'] < 0) $this->options['pull_delay'] = 0;
+    }
+
+    /**
      * Lancement d'une requete
-     * @param 
+     * @param  array
      * @return integer
      */
     public function fire($c)
     {
+        if ($this->handles === 0) $this->init();
         $this->stack[++$this->handles] = array($c, null, null);
         $this->tick();
         return $this->handles;
@@ -99,8 +137,8 @@ class REST_Puller
      */
     public function fetch()
     {
-        if ($this->options['debug']) echo "==== FETCH\n";
         do {
+            ++$this->fetchs;
             foreach($this->stack as $k => $value) {
                 if (is_null($value[2])) continue;
                 $this->stack[$k][2] =  null;
@@ -108,93 +146,113 @@ class REST_Puller
                 unset($this->stack[$k]);
                 return array($k, $value[2]);
             }
-            usleep($this->options['fetch_delay']);
-        } while ($this->tick());
+            ++$this->fetchs_null;
+            if ($this->options['fetch_delay'] > 0)
+                usleep($this->options['fetch_delay']);
+        } while ($this->tick(true));
         return false;
     }
 
-function convert($size)
- {
-    $unit=array('b','kb','mb','gb','tb','pb');
-    return @round($size/pow(1024,($i=floor(log($size,1024)))),2).' '.$unit[$i];
- }
-
-    protected function tick()
+    static function convert($size)
     {
+        $unit=array('b','kb','mb','gb','tb','pb');
+        return @round($size/pow(1024,($i=floor(log($size,1024)))),2).' '.$unit[$i];
+    }
 
-        echo sizeof($this->stack).' // '.$this->convert(memory_get_usage(true))."\n";
-        if ($this->options['debug']) echo "+--- TICK: $this->handles / $this->requests / $this->responses ----------------------------------------------\n";
-        if ($this->handles === $this->requests and $this->requests === $this->responses) {
-            if ($this->options['debug']) echo "+--- FALSE\n";
-            return false;
-        }
+    /**
+     * tick
+     * @return boolean
+     */
+    protected function tick($fetch = false)
+    {
+//        if ($this->options['debug']) 
+//            echo "MUSE : ".self::convert(memory_get_usage(true)).'('.(sizeof($this->stack) === $this->handles ? '+' : '-').')'."\n";
+        if ($this->requests !== 0 and $this->handles === $this->requests and $this->requests === $this->responses) return false;
         $c = 0;
-        if ($this->running == 0) {
-            foreach($this->stack as &$valueX) {
-                if (is_null($valueX[0])) continue;
-                $c++;
-                if ($c < $this->options['max_clients'] and ($this->handles - $this->requests) >= $this->options['max_clients']) {
-                    if ($this->options['debug']) echo "| PUSH\n";
-                    continue;
-                }
-
-//                $this->mh = curl_multi_init();
-                $a = $r = null;
-                $c = 0;
-                foreach($this->stack as &$value) if (!is_null($value[0]) and $c <= $this->options['max_clients']) {
+        if ($this->flag === false) {
+            ++$this->loads;
+            if (($this->handles - $this->requests) >= $this->options['queue_size']
+                or ($this->requests !== 0 and  $this->requests === $this->responses)
+                or $fetch === true) {
+                if ($this->options['debug']) echo 'LOAD : '.sprintf('%04d|%04d|%04d',$this->handles, $this->requests, $this->responses).' {';
+                foreach($this->stack as &$value) if (!is_null($value[0])) {
+                    if ($c >= $this->options['queue_size']) break;
                     $value[1] = curl_init();
                     curl_setopt_array($value[1], $value[0]);
                     curl_multi_add_handle($this->mh, $value[1]);
-                    $value[0] = null;
                     $status = curl_multi_exec($this->mh, $this->running);
+                    $value[0] = null;
                     ++$c;
                     ++$this->requests;
+                    if ($this->options['debug']) echo '-';
                 }
-                if ($this->options['debug']) echo '| LOT #'.++$this->mcurls.' clients : #'.$c."\n";
-                break;
+                if ($this->options['debug']) echo '} '.$c."\n";
+                $this->flag = true;
+            }
+            else {
+                ++$this->loads_null;
             }
         }
         else {
-            if ($this->options['debug']) echo "| RUNNING : $this->running\n";
-            $flush = ($this->handles % $this->options['max_clients'] === 0 or ($this->handles - $this->requests) >= $this->options['max_clients']);
-            if ($flush)
-                if ($this->options['debug']) echo "| FLUSH\n";
+            ++$this->pulls;
+            if ($this->options['pull_delay'] > 0)
+                usleep($this->options['pull_delay']);
+            $flush = ($this->running > $this->options['queue_size']);
+            $r = $this->running;
+            if ($this->options['debug']) echo 'PULL : '.sprintf('%04d|%04d|%04d',$this->handles, $this->requests, $this->responses).' '.($flush ? '[' : '<');
             do {
                 while(($status = curl_multi_exec($this->mh, $this->running)) == CURLM_CALL_MULTI_PERFORM);
                 if ($status == CURLM_OK) {
-                    $this->_responses();
+                    $c += $this->_responses();
                 }
-                else break;
-            } while ($this->running and $flush);
-            if ($this->running == 0) {
-//                curl_multi_close($this->mh);
-//                $this->mh = null;
-//                $this->running = null;
-                if ($this->options['debug']) echo '| LOT #'.$this->mcurls." done.\n";
-            }
+                elseif ($this->options['debug']) echo 'X';
+                if (!$flush) break;
+            } while ($this->running);
+            if ($this->running == 0) $this->flag = false;
+            if ($this->options['debug']) echo ($flush ? ']' : '>').' '.$c.'/'.$r.PHP_EOL;
+            if ($c === 0) ++$this->pulls_null;
         }
-        if ($this->options['debug']) echo "+--- TRUE\n";
         return true;
     }
 
     private function _responses()
     {
+        $c = 0;
         while($done = curl_multi_info_read($this->mh)) {
-            if ($this->options['debug']) echo '| '.(string)$done['handle']."(".$done['result'].") done.\n";
+            ++$c;
+            $f = false;
             foreach($this->stack as $k => &$value) {
                 if (is_null($value[1]) or $value[1] !== $done['handle']) continue;
                 $value[2] = new REST_Response(curl_multi_getcontent($done['handle']));
                 foreach(REST_Response::$properties as $name => $const) {
                     $value[2]->$name = curl_getinfo($done['handle'], $const);
                 }
-                if ($this->options['debug']) echo "| Response id #".$k."(".$value[2]->code.") done.\n";
+                if ($this->options['debug']) echo ':';
+                $f = true;
                 break;
             }
+            if ($this->options['debug'] and !$f) echo '.';
+
             curl_multi_remove_handle($this->mh, $done['handle']);
             curl_close($done['handle']);
-            $this->stack[$k] = null;
+            $this->stack[$k][1] = null;
             ++$this->responses;
         }
+        return $c;
+    }
+
+
+    public function getInfo($k = null)
+    {
+        $a =  array(
+            'requests'      => $this->requests,
+            'clients_avg'   => round($this->requests/$this->loads, 2),
+            'fetchs_hit'    => round(($this->fetchs - $this->fetchs_null) / $this->fetchs, 2),
+            'pulls_hit'    => round(($this->pulls - $this->pulls_null) / $this->pulls, 2),
+            'loads_hit'    => round(($this->loads - $this->loads_null) / $this->loads, 2),
+        );
+        if (is_null($k) or !isset($a[$k])) return $a;
+        else return $a[$k];
     }
 }
 

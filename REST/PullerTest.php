@@ -61,30 +61,14 @@ class REST_PullerTest extends PHPUnit_Framework_TestCase
     function test_large()
     {
         $requests = 2500;
-        $this->p->setOption('queue_size', 30);
+        $clients = 30;
+        $this->p->setOption('queue_size', $clients);
 
         $r = new REST_Request('localhost', 8000);
         for($i= 0;$i < $requests; $i++) {
             $this->p->fire($r->get('/'));
         }
 
-        while(list(, $h) = $this->p->fetch()) {
-            $this->assertEquals(200, $h->code);
-        }
-
-        $this->assertEquals($requests, $this->p->getInfo('requests'));
-    }
-    function test_cool()
-    {
-        $requests = 2500;
-        $this->p->setOption('queue_size', 30);
-
-        $r = new REST_Request('localhost', 8000);
-        for($i= 0;$i < $requests; $i++) {
-            $this->p->fire($r->get('/'));
-            if ($i > 30) if (list(, $h) = $this->p->fetch()) 
-                $this->assertEquals(200, $h->code);
-        }
         while(list(, $h) = $this->p->fetch()) {
             $this->assertEquals(200, $h->code);
         }
@@ -94,13 +78,15 @@ class REST_PullerTest extends PHPUnit_Framework_TestCase
 
     function test_huge()
     {
-        $requests = 10000;
-        $this->p->setOption('queue_size', 100);
-        $this->p->setOption('debug', true);
+        $requests = 50000;
+        $clients = 150;
+        $this->p->setOption('queue_size', $clients);
 
         $r = new REST_Request('localhost', 8000);
         for($i= 0;$i < $requests; $i++) {
             $this->p->fire($r->get('/'));
+            if ($i > $clients) if (list(, $h) = $this->p->fetch()) 
+                $this->assertEquals(200, $h->code);
         }
 
         while(list(, $h) = $this->p->fetch()) {

@@ -52,7 +52,7 @@ class REST_Puller
         'queue_size'  => null,
         'fetch_delay' => 0,    
         'pull_delay'  => 0,
-        'debug'       => null,
+        'verbose'       => null,
     );
     protected $mh = null;
     protected $running = 0;
@@ -67,6 +67,8 @@ class REST_Puller
     protected $pulls = 0;
     protected $pulls_null = 0;
     protected $flag = false;
+    protected $time = 0;
+
 
     /**
      * Constructor
@@ -110,11 +112,13 @@ class REST_Puller
         settype($this->options['queue_size'], 'integer');
         settype($this->options['fetch_delay'], 'integer');
         settype($this->options['pull_delay'], 'integer');
-        settype($this->options['debug'], 'boolean');
+        settype($this->options['verbose'], 'boolean');
 
         if ($this->options['queue_size'] <= 0) $this->options['queue_size'] = 10;
         if ($this->options['fetch_delay'] < 0) $this->options['fetch_delay'] = 0;
         if ($this->options['pull_delay'] < 0) $this->options['pull_delay'] = 0;
+
+        $this->time = microtime(true);
     }
 
     /**
@@ -165,7 +169,7 @@ class REST_Puller
      */
     protected function tick($fetch = false)
     {
-//        if ($this->options['debug']) 
+//        if ($this->options['verbose']) 
 //            echo "MUSE : ".self::convert(memory_get_usage(true)).'('.(sizeof($this->stack) === $this->handles ? '+' : '-').')'."\n";
         if ($this->requests !== 0 and $this->handles === $this->requests and $this->requests === $this->responses) return false;
         $c = 0;
@@ -174,7 +178,7 @@ class REST_Puller
             if (($this->handles - $this->requests) >= $this->options['queue_size']
                 or ($this->requests !== 0 and  $this->requests === $this->responses)
                 or $fetch === true) {
-                if ($this->options['debug']) echo 'LOAD : '.sprintf('%04d|%04d|%04d',$this->handles, $this->requests, $this->responses).' {';
+                if ($this->options['verbose']) echo 'LOAD : '.sprintf('%04d|%04d|%04d',$this->handles, $this->requests, $this->responses).' {';
                 foreach($this->stack as &$value) if (!is_null($value[0])) {
                     if ($c >= $this->options['queue_size']) break;
                     $value[1] = curl_init();
@@ -184,9 +188,9 @@ class REST_Puller
                     $value[0] = null;
                     ++$c;
                     ++$this->requests;
-                    if ($this->options['debug']) echo '-';
+                    if ($this->options['verbose']) echo '-';
                 }
-                if ($this->options['debug']) echo '} '.$c."\n";
+                if ($this->options['verbose']) echo '} '.$c."\n";
                 $this->flag = true;
             }
             else {
@@ -199,17 +203,17 @@ class REST_Puller
                 usleep($this->options['pull_delay']);
             $flush = ($this->running > $this->options['queue_size']);
             $r = $this->running;
-            if ($this->options['debug']) echo 'PULL : '.sprintf('%04d|%04d|%04d',$this->handles, $this->requests, $this->responses).' '.($flush ? '[' : '<');
+            if ($this->options['verbose']) echo 'PULL : '.sprintf('%04d|%04d|%04d',$this->handles, $this->requests, $this->responses).' '.($flush ? '[' : '<');
             do {
                 while(($status = curl_multi_exec($this->mh, $this->running)) == CURLM_CALL_MULTI_PERFORM);
                 if ($status == CURLM_OK) {
                     $c += $this->_responses();
                 }
-                elseif ($this->options['debug']) echo 'X';
+                elseif ($this->options['verbose']) echo 'X';
                 if (!$flush) break;
             } while ($this->running);
             if ($this->running == 0) $this->flag = false;
-            if ($this->options['debug']) echo ($flush ? ']' : '>').' '.$c.'/'.$r.PHP_EOL;
+            if ($this->options['verbose']) echo ($flush ? ']' : '>').' '.$c.'/'.$r.PHP_EOL;
             if ($c === 0) ++$this->pulls_null;
         }
         return true;
@@ -227,11 +231,11 @@ class REST_Puller
                 foreach(REST_Response::$properties as $name => $const) {
                     $value[2]->$name = curl_getinfo($done['handle'], $const);
                 }
-                if ($this->options['debug']) echo ':';
+                if ($this->options['verbose']) echo ':';
                 $f = true;
                 break;
             }
-            if ($this->options['debug'] and !$f) echo '.';
+            if ($this->options['verbose'] and !$f) echo '.';
 
             curl_multi_remove_handle($this->mh, $done['handle']);
             curl_close($done['handle']);
@@ -244,12 +248,15 @@ class REST_Puller
 
     public function getInfo($k = null)
     {
+        $t = microtime(true) - $this->time;
         $a =  array(
             'requests'      => $this->requests,
-            'clients_avg'   => round($this->requests/$this->loads, 2),
+            'requests_avg'  => round($this->requests/$this->loads, 2),
+            'requests_sec'  => round($this->requests/$t, 2),
             'fetchs_hit'    => round(($this->fetchs - $this->fetchs_null) / $this->fetchs, 2),
-            'pulls_hit'    => round(($this->pulls - $this->pulls_null) / $this->pulls, 2),
-            'loads_hit'    => round(($this->loads - $this->loads_null) / $this->loads, 2),
+            'pulls_hit'     => round(($this->pulls - $this->pulls_null) / $this->pulls, 2),
+            'loads_hit'     => round(($this->loads - $this->loads_null) / $this->loads, 2),
+            'time'          => round($t, 2),
         );
         if (is_null($k) or !isset($a[$k])) return $a;
         else return $a[$k];

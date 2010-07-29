@@ -19,6 +19,7 @@ REST_PullerTest:
 	$(PHPUNIT) $@ REST/PullerTest.php
 
 push:
+	git push
 	git push --tags
 
 release: REST_Client-`./extract-version.sh`.tgz

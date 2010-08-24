@@ -33,31 +33,165 @@
  * @category  REST
  * @package   REST_Client
  * @author    Nicolas Thouvenin <nthouvenin@gmail.com>
+ * @author    Stéphane Gully <stephane.gully@gmail.com>
  * @copyright 2010 Nicolas Thouvenin
  * @license   http://opensource.org/licenses/bsd-license.php BSD Licence
  */
 
 /**
- * Request class
+ * REST_Request class
  *
  * @category  REST
  * @package   REST_Client
  * @author    Nicolas Thouvenin <nthouvenin@gmail.com>
+ * @author    Stéphane Gully <stephane.gully@gmail.com>
  * @copyright 2010 Nicolas Thouvenin
  * @license   http://opensource.org/licenses/bsd-license.php BSD Licence
  */
 class REST_Request
 {
-    protected $options;
-    protected $host;
-    protected $base;
+    protected $curl_options = array();
+    
+    protected $method   = null;
+    protected $protocol = null;
+    protected $host     = null;
+    protected $port     = null;
+    protected $url      = null;
+    protected $body     = null;
+    
+    protected $user     = null;
+    protected $password = '';
 
-    function __construct($host, $port = 80, $options = array())
+    protected function __construct($curl_options = array())
     {
-        $this->host = $host;
-        $this->base = 'http://'.$this->host.':'.$port;
-        $this->options = array(
-            CURLOPT_PORT           => $port,
+        $this->curl_options = $curl_options;
+    }
+
+    /**
+     * Create a new puller instance
+     * @return REST_Puller
+     */
+    public static function newInstance($options = array())
+    {
+        return new self($options);
+    }
+
+    /**
+     * Setup a CURL specific option
+     * @return REST_Puller
+     */
+    public function setCurlOption($k, $v)
+    {
+        $this->curl_options[$k] = $v;
+        return $this;
+    }
+    
+    /**
+     * Complète intelligement les attributs par leurs bonnes valeurs
+     * @return REST_Puller
+     */
+    public function autoAttributes()
+    {
+        if (is_null($this->method)) {
+            $this->method = 'GET';
+        }
+        if (is_null($this->protocol)) {
+            $this->protocol = 'http';
+        }        
+        if (is_null($this->host)) {
+            $this->host = 'localhost';
+        }
+        if (is_null($this->port)) {
+            $this->port = ($this->protocol == 'https' ? 443 : 80);
+        }
+        if (is_null($this->url)) {
+            $this->url = '/';
+        }
+        return $this;
+    }
+
+    /**
+     * HTTP ou HTTPS
+     * @return REST_Puller
+     */
+    public function setProtocol($v)
+    {
+        if (in_array(strtolower($v), array('http', 'https'))) {
+            $this->protocol = $v;
+        }
+        return $this;
+    }
+    
+    /**
+     * Hostname
+     * @return REST_Puller
+     */
+    public function setHost($v)
+    {
+        $this->host = (string)$v;
+        return $this;
+    }
+    
+    /**
+     * Port
+     * @return REST_Puller
+     */
+    public function setPort($v)
+    {
+        $this->port = (integer)$v;
+        return $this;
+    }
+    
+    /**
+     * Méthode HTTP
+     * @return REST_Puller
+     */
+    public function setMethod($v)
+    {
+        $this->method = strtoupper($v);
+        return $this;
+    }
+    
+    /**
+     * Url
+     * @return REST_Puller
+     */
+    public function setURL($v)
+    {
+        $this->url = (string)$v;
+        return $this;
+    }
+    
+    /**
+     * HTTP body
+     * @return REST_Puller
+     */
+    public function setBody($v)
+    {
+        $this->body = $v;
+        return $this;
+    }
+    
+    /**
+     * Header HTTP
+     * @return REST_Puller
+     */
+    public function addHeader($k, $v)
+    {
+        // TODO
+        return $this;
+    }    
+
+    /**
+     * Convert REST_Request data to CURL format
+     * @return array
+     */
+    public function toCurl()
+    {
+        $this->autoAttributes();
+
+        $options = $this->curl_options + array(
+            CURLOPT_PORT           => $this->port,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_HEADER         => true,
@@ -73,9 +207,33 @@ class REST_Request
             //            CURLOPT_SSL_VERIFYHOST => 0,
             //            CURLOPT_SSL_VERIFYPEER => false,
             //            CURLOPT_VERBOSE        => 1
-        ) + $options;
+        );
+        
+        $options[CURLOPT_URL]           = $this->protocol.'://'.$this->host.':'.$this->port.$this->url;
+        $options[CURLOPT_CUSTOMREQUEST] = $this->method;
+        if (!is_null($this->user)) {
+            $options[CURLOPT_USERPWD] = $this->user.':'.$this->password;
+        }
+
+        if (!is_null($this->body) and $this->body !== '') {
+            $options[CURLOPT_POSTFIELDS] = $this->body;
+        }
+        
+        if ($this->method === 'POST') {
+            $options[CURLOPT_POST] = true;
+        }
+        
+        return $options;
     }
 
+
+    /**
+     * Convertion des méthodes en méthodes HTTP
+     * Equivalent de la combinaison ->setURL(...)->setMethod(...)
+     * Ex: $r->delete('/maressource')
+     *     $r->options('/maressource')
+     * @return REST_Puller
+     */
     public function __call($method, $arguments) 
     {
         if (count($arguments) === 0)
@@ -87,30 +245,22 @@ class REST_Request
         $url = trim($arguments[0]);
         if ($url === '')
             return trigger_error(sprintf('%s::%s() expects parameter 1 to be not empty', __CLASS__, $method), E_USER_WARNING);
-
-
-        $method  = strtoupper($method);
-        $data    = isset($arguments[1]) ? $arguments[1] : null;
-        $options = array();
-
-        if (strpos($url, $this->base) === false)
-            $options[CURLOPT_URL] = $this->base.$url;
-        else 
-            $options[CURLOPT_URL] = $url;
-
-        $options[CURLOPT_CUSTOMREQUEST] = $method;
-
-        if (!is_null($data) and $data !== '')
-            $options[CURLOPT_POSTFIELDS] = $data;
-        if ($method === 'POST')
-            $options[CURLOPT_POST] = true;
-
-        return $this->options + $options;
+        
+        $this->setURL($url);
+        $this->setMethod($method);
+        $this->setBody(isset($arguments[1]) ? $arguments[1] : null);
+        
+        return $this;
     }
 
+    /**
+     * Authentification HTTP
+     * @return REST_Puller
+     */
     public function setAuth($user, $password)
     {
-        $this->options[CURLOPT_USERPWD] = $user.':'.$password;
+        $this->user     = (string)$user;
+        $this->password = (string)$password;
         return $this;
     }
 }

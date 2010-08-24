@@ -9,12 +9,16 @@ require_once 'REST/Request.php';
 
 class REST_PullerTest extends PHPUnit_Framework_TestCase
 {
+
+    private $test_host = 'localhost';
+    private $test_port = 80;
+
     private $p;
     function setUp()
     {
-        $this->p = new REST_Puller(array(
-//            'debug' => true,
-        ));
+        $this->p = REST_Puller::newInstance(array(
+//                        'verbose' => true,
+                    ));
     }
     function tearDown()
     {
@@ -24,10 +28,13 @@ class REST_PullerTest extends PHPUnit_Framework_TestCase
 
     function test_small()
     {
-        $r = new REST_Request('localhost', 8000);
-        $this->p->fire($r->get('/'));
-        if (list(, $h) = $this->p->fetch()) 
-            $this->assertEquals(200, $h->code);
+        $r = REST_Request::newInstance()
+                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)
+                ->setMethod('GET')->setUrl('/');
+        $this->p->fire($r);
+        if ($resp = $this->p->fetch()) {
+            $this->assertEquals(200, $resp->code);
+        }
         $this->assertEquals(1, $this->p->getInfo('requests'));
     }
 
@@ -35,7 +42,7 @@ class REST_PullerTest extends PHPUnit_Framework_TestCase
     {
         $this->p->setOption('queue_size', 3);
 
-        $r = new REST_Request('fr.php.net');
+        $r = REST_Request::newInstance()->setProtocol('http')->setHost('fr.php.net');
         $dom     = $this->p->fire($r->get('/dom'));
         $curl    = $this->p->fire($r->get('/curl'));
         $strings = $this->p->fire($r->get('/strings'));
@@ -45,9 +52,10 @@ class REST_PullerTest extends PHPUnit_Framework_TestCase
         $sockets = $this->p->fire($r->get('/sockets'));
 
         $z = array();
-        while(list($id, $response) = $this->p->fetch()) {
-            $z[$id] = $response->content;
+        while($response = $this->p->fetch()) {
+            $z[$response->id] = $response->content;
         }
+
         $this->assertContains('PHP: cURL - Manual', $z[$curl]);
         $this->assertContains('PHP: DOM - Manual',  $z[$dom]);
         $this->assertContains('id="book.strings"', $z[$strings]);
@@ -58,19 +66,22 @@ class REST_PullerTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals(7, $this->p->getInfo('requests'));
     }
+
     function test_large()
     {
         $requests = 2500;
         $clients = 30;
         $this->p->setOption('queue_size', $clients);
 
-        $r = new REST_Request('localhost', 8000);
-        for($i= 0;$i < $requests; $i++) {
-            $this->p->fire($r->get('/'));
+        $r = REST_Request::newInstance()
+                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)
+                ->setMethod('GET')->setUrl('/');
+        for($i= 0; $i < $requests; $i++) {
+            $this->p->fire($r);
         }
 
-        while(list(, $h) = $this->p->fetch()) {
-            $this->assertEquals(200, $h->code);
+        while($response = $this->p->fetch()) {
+            $this->assertEquals(200, $response->code);
         }
 
         $this->assertEquals($requests, $this->p->getInfo('requests'));
@@ -82,15 +93,17 @@ class REST_PullerTest extends PHPUnit_Framework_TestCase
         $clients = 150;
         $this->p->setOption('queue_size', $clients);
 
-        $r = new REST_Request('localhost', 8000);
+        $r = REST_Request::newInstance()
+                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)
+                ->setMethod('GET')->setUrl('/');
         for($i= 0;$i < $requests; $i++) {
-            $this->p->fire($r->get('/'));
-            if ($i > $clients) if (list(, $h) = $this->p->fetch()) 
-                $this->assertEquals(200, $h->code);
+            $this->p->fire($r);
+            if ($i > $clients) if ($response =  $this->p->fetch()) 
+                $this->assertEquals(200, $response->code);
         }
 
-        while(list(, $h) = $this->p->fetch()) {
-            $this->assertEquals(200, $h->code);
+        while($response = $this->p->fetch()) {
+            $this->assertEquals(200, $response->code);
         }
 
         $this->assertEquals($requests, $this->p->getInfo('requests'));

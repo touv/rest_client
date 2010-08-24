@@ -33,6 +33,7 @@
  * @category  REST
  * @package   REST_Client
  * @author    Nicolas Thouvenin <nthouvenin@gmail.com>
+ * @author    Stéphane Gully <stephane.gully@gmail.com>
  * @copyright 2010 Nicolas Thouvenin
  * @license   http://opensource.org/licenses/bsd-license.php BSD Licence
  */
@@ -43,6 +44,7 @@ require_once 'REST/Response.php';
  * @category  REST
  * @package   REST_Client
  * @author    Nicolas Thouvenin <nthouvenin@gmail.com>
+ * @author    Stéphane Gully <stephane.gully@gmail.com>
  * @copyright 2010 Nicolas Thouvenin
  * @license   http://opensource.org/licenses/bsd-license.php BSD Licence
  */
@@ -74,11 +76,20 @@ class REST_Puller
      * Constructor
      * @param array
      */
-    function __construct($options = array())
+    protected function __construct($options = array())
     {
         $this->options = array_merge($this->options, $options);
 
         $this->mh = curl_multi_init();
+    }
+
+    /**
+     * Create a new puller instance
+     * @return REST_Puller
+     */
+    public static function newInstance($options = array())
+    {
+        return new self($options);
     }
 
     /**
@@ -99,9 +110,11 @@ class REST_Puller
     {
         if ($this->handles === 0) {
             $this->options[$name] = $value;
-            return true;
+        } else {
+            // TODO : balancer une exception mieux typée ?
+            throw new Exception("Invalid option !");
         }
-        else return false;
+        return $this;
     }
 
     /**
@@ -129,7 +142,7 @@ class REST_Puller
     public function fire($c)
     {
         if ($this->handles === 0) $this->init();
-        $this->stack[++$this->handles] = array($c, null, null);
+        $this->stack[++$this->handles] = array(clone $c, null, null);
         $this->tick();
         return $this->handles;
     }
@@ -137,7 +150,7 @@ class REST_Puller
 
     /**
      * Recupére une requete terminée
-     * @return array
+     * @return REST_Response or false
      */
     public function fetch()
     {
@@ -148,7 +161,7 @@ class REST_Puller
                 $this->stack[$k][2] =  null;
                 $this->stack[$k] = null;
                 unset($this->stack[$k]);
-                return array($k, $value[2]);
+                return $value[2]; // returns REST_Response instance
             }
             ++$this->fetchs_null;
             if ($this->options['fetch_delay'] > 0)
@@ -182,10 +195,10 @@ class REST_Puller
                 foreach($this->stack as &$value) if (!is_null($value[0])) {
                     if ($c >= $this->options['queue_size']) break;
                     $value[1] = curl_init();
-                    curl_setopt_array($value[1], $value[0]);
+                    curl_setopt_array($value[1], $value[0]->toCurl());
                     curl_multi_add_handle($this->mh, $value[1]);
                     $status = curl_multi_exec($this->mh, $this->running);
-                    $value[0] = null;
+                    $value[0] = null; // to save some memory, removes REST_Request instance from the stack
                     ++$c;
                     ++$this->requests;
                     if ($this->options['verbose']) echo '-';
@@ -231,6 +244,7 @@ class REST_Puller
                 foreach(REST_Response::$properties as $name => $const) {
                     $value[2]->$name = curl_getinfo($done['handle'], $const);
                 }
+                $value[2]->id = $k; // REST_Puller internal request identifier 
                 if ($this->options['verbose']) echo ':';
                 $f = true;
                 break;

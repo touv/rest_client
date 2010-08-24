@@ -54,6 +54,7 @@ class REST_Response
         'length'=> CURLINFO_CONTENT_LENGTH_DOWNLOAD,  
         'type'  => CURLINFO_CONTENT_TYPE  
     );
+    public $id = null;
     public $headers = array();
     public $content = '';
     public $code = 0;

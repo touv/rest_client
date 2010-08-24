@@ -19,7 +19,7 @@ Usage
 
 <?php
 
-require_once "REST/Client.php';
+require_once 'REST/Client.php';
 
 $rr = REST_Request::newInstance()->setHost('rest.server.com')->setPort(8080);
 $rc = REST_Client::newInstance();

@@ -10,9 +10,14 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
 {
     function test_get()
     {
-        $c = new REST_Client('fr.php.net');
-        $r = $c->get('/curl');
-        $this->assertEquals($r->code, 200);
-        $this->assertContains('PHP: cURL - Manual', $r->content);
+        $client = REST_Client::newInstance();
+
+        $request = REST_Request::newInstance()
+                ->setProtocol('http')->setHost('fr.php.net')
+                ->setMethod('GET')->setUrl('/curl');
+
+        $response = $client->fire($request);
+        $this->assertEquals($response->code, 200);
+        $this->assertContains('PHP: cURL - Manual', $response->content);
     }
 }

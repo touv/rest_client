@@ -33,6 +33,7 @@
  * @category  REST
  * @package   REST_Client
  * @author    Nicolas Thouvenin <nthouvenin@gmail.com>
+ * @author    Stéphane Gully <stephane.gully@gmail.com>
  * @copyright 2010 Nicolas Thouvenin
  * @license   http://opensource.org/licenses/bsd-license.php BSD Licence
  */
@@ -46,33 +47,58 @@ require_once 'REST/Request.php';
  * @category  REST
  * @package   REST_Client
  * @author    Nicolas Thouvenin <nthouvenin@gmail.com>
+ * @author    Stéphane Gully <stephane.gully@gmail.com>
  * @copyright 2010 Nicolas Thouvenin
  * @license   http://opensource.org/licenses/bsd-license.php BSD Licence
  */
 class REST_Client
 {
     static $version = '1.1';
+    private $options = array();
     private $handle;
-    public $request;
 
-    function __construct($host, $port = 80, $options = array())
+    protected function __construct($options = array())
     {
-        $this->request = new REST_Request(
-            $host, 
-            $port, 
-            array(CURLOPT_USERAGENT => 'REST_Client/'.self::$version)+$options
-        );
+        $this->options = $options;
         $this->handle = curl_init();
     }
 
-    function __destruct() 
+    /**
+     * Create a new REST_Client instance
+     * @return REST_Puller
+     */
+    public static function newInstance($options = array())
+    {
+        return new self($options);
+    }
+
+    function __destruct()
     {
         curl_close($this->handle);
     }
-
-    public function __call($method, $arguments) 
+    
+    
+    /**
+     * setOption (not used)
+     * @param string
+     * @param mixed
+     */
+    public function setOption($name, $value)
     {
-        curl_setopt_array($this->handle, $this->request->__call($method, $arguments));
+        $this->options[$name] = $value;
+        return $this;
+    }
+    
+    /**
+     * Launch a synchrone request
+     * @param  array
+     * @return REST_Response
+     */
+    public function fire(REST_Request $request)
+    {
+        $request->setCurlOption(CURLOPT_USERAGENT, 'REST_Client/'.self::$version);
+
+        curl_setopt_array($this->handle, $request->toCurl());
 
         if (!is_resource($this->handle))
             return trigger_error(sprintf('%s::%s() cURL session was lost', __CLASS__, $method), E_USER_ERROR);
@@ -85,11 +111,5 @@ class REST_Client
             $r->$name = curl_getinfo($this->handle, $const);
         }
         return $r;
-    }
-
-    public function setAuth($user, $password)
-    {
-        $this->request->setAuth($user, $password);
-        return $this;
     }
 }

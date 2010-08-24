@@ -112,7 +112,7 @@ class REST_Puller
             $this->options[$name] = $value;
         } else {
             // TODO : balancer une exception mieux typée ?
-            throw new Exception("Invalid option !");
+            throw new Exception("setOption is called too late !");
         }
         return $this;
     }
@@ -135,7 +135,7 @@ class REST_Puller
     }
 
     /**
-     * Lancement d'une requete
+     * Launch an asynchrone request
      * @param  array
      * @return integer
      */
@@ -149,7 +149,7 @@ class REST_Puller
 
 
     /**
-     * Recupére une requete terminée
+     * Check for the finished request and return corresponding REST_Response
      * @return REST_Response or false
      */
     public function fetch()

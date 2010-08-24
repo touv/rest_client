@@ -139,7 +139,7 @@ class REST_Puller
      * @param  array
      * @return integer
      */
-    public function fire($c)
+    public function fire(REST_Request $c)
     {
         if ($this->handles === 0) $this->init();
         $this->stack[++$this->handles] = array(clone $c, null, null);

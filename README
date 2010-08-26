@@ -4,11 +4,11 @@ REST_Client
 Description
 -----------
 
-A simple and flexible REST client which uses PHP's Curl extension to send HTTP queries.
+A simple and flexible REST client which uses PHP's Curl extension to send HTTP queries. It has been specially designed to query a REST server.
 
-It can be used to achieve:
-  - few synchronous requests (REST_EasyClient or REST_Client_Sync)
-  - or huge quantities of optimized asynchronous requests (REST_Client_Async)
+This package can be used to:
+  - send synchronous requests using REST_EasyClient or REST_Client_Sync classes,
+  - or send huge quantities but optimized asynchronous requests using REST_Client_Async class.
 
 
 Installation

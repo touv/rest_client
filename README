@@ -4,7 +4,11 @@ REST_Client
 Description
 -----------
 
-A simple REST client.
+A simple and flexible REST client which uses PHP's Curl extension to send HTTP queries.
+
+It can be used to achieve:
+  - few synchronous requests (REST_EasyClient or REST_Client_Sync)
+  - or huge quantities of optimized asynchronous requests (REST_Client_Async)
 
 
 Installation
@@ -21,11 +25,10 @@ Usage
 
 require_once 'REST/Client.php';
 
-$rr = REST_Request::newInstance()->setHost('rest.server.com')->setPort(8080);
-$rc = REST_Client::newInstance();
+$rc = REST_EasyClient('rest.server.com', 8080);
 
 // GET Method
-$o = $rc->fire($rr->get('/resource/to/get'));
+$o = $rc->get('/resource/to/get');
 
 // check network error
 if ($o->isError()) die($o->error);
@@ -37,16 +40,16 @@ if ($o->code == 404) die('Oups, where is my resource ?');
 echo $o->content;
 
 // DELETE Method
-$o = $rc->fire($rr->delete('/resource/to/delete'));
+$o = $rc->delete('/resource/to/delete');
 
 // POST Method
 // $data can be a array or a string chars
 $data = array('key' => 'value');
-$o = $rc->fire($rr->post('/resource/to/post', $data));
+$o = $rc->post('/resource/to/post', $data);
 
 // PUT Method
 $data = '<xml>some data</xml>';
-$o = $rc->fire($rr->put('/resource/to/put', $data));
+$o = $rc->put('/resource/to/put', $data);
 
 // Retrieve HTTP headers
 echo $o->headers['x-powered-by'];

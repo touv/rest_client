@@ -12,10 +12,16 @@
 		<email>nthouvenin@gmail.com</email>
 		<active>yes</active>
 	</lead>
-	<date>2010-07-29</date>
+	<lead>
+		<name>Stéphane Gully</name>
+		<user>kerphi</user>
+		<email>stephane.gully@gmail.com</email>
+		<active>yes</active>
+	</lead>
+	<date>2010-08-27</date>
 	<version>
-		<release>2.0.0</release>
-		<api>2.0</api>
+		<release>2.1.0</release>
+		<api>2.1</api>
 	</version>
 	<stability>
 		<release>stable</release>
@@ -23,15 +29,19 @@
 	</stability>
 	<license uri="http://opensource.org/licenses/bsd-license.php">BSD Licence</license>
 	<notes>
-		ajout de Request et de Puller
+		Refactoring POO
 	</notes>
 	<contents>
 		<dir name="/">
 			<dir name="REST">
+				<dir name="Client">
+					<file name="Sync.php" role="php" />
+					<file name="Async.php" role="php" />
+				</dir>
 				<file name="Client.php" role="php" />
 				<file name="ClientTest.php" role="test" />
-                <file name="Puller.php" role="php" />
-                <file name="PullerTest.php" role="test" />
+                <file name="EasyClient.php" role="php" />
+                <file name="EasyClientTest.php" role="test" />
                 <file name="Request.php" role="php" />
 				<file name="Response.php" role="php" />
 			</dir>

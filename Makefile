@@ -11,12 +11,12 @@ all :
 	@echo "make push"
 
 
-test : REST_ClientTest REST_PullerTest
+test : REST_ClientTest REST_EasyClientTest
 
 REST_ClientTest:
 	$(PHPUNIT) $@ REST/ClientTest.php
-REST_PullerTest:
-	$(PHPUNIT) $@ REST/PullerTest.php
+REST_EasyClientTest:
+	$(PHPUNIT) $@ REST/EasyClientTest.php
 
 push:
 	git push

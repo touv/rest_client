@@ -53,21 +53,27 @@ require_once 'REST/Client.php';
 class REST_Client_Sync extends REST_Client
 {
     private $options = array();
-    private $handle;
+    private $handle   = null;
+    private $response = null;
+    private static $request_id = 0;
+    
+    // for stats
+    private $time = 0;
 
     public function __construct($options = array())
     {
         $this->options = $options;
         $this->handle = curl_init();
+        $this->time = microtime(true);
     }
 
     public function __destruct()
     {
         curl_close($this->handle);
     }
-    
+
     /**
-     * setOption (not used)
+     * Register one option
      * @param string
      * @param mixed
      */
@@ -80,32 +86,51 @@ class REST_Client_Sync extends REST_Client
     /**
      * Launch a synchrone request
      * @param  array
-     * @return REST_Response
+     * @return integer the request identifier
      */
     public function fire(REST_Request $request)
-    {
+    {        
         $request->setCurlOption(CURLOPT_USERAGENT, 'REST_Client/'.self::$version);
 
         curl_setopt_array($this->handle, $request->toCurl());
 
         if (!is_resource($this->handle))
             return trigger_error(sprintf('%s::%s() cURL session was lost', __CLASS__, $method), E_USER_ERROR);
+        
+        $this->response = new REST_Response(curl_exec($this->handle), curl_errno($this->handle), curl_error($this->handle));
+        if (!$this->response->isError()) {
+            foreach(REST_Response::$properties as $name => $const) {
+                $this->response->$name = curl_getinfo($this->handle, $const);
+            }
+        }
+        $this->response->id = ++$this->request_id;
 
-        $r = new REST_Response(curl_exec($this->handle), curl_errno($this->handle), curl_error($this->handle));
-        if ($r->isError()) {
-            $r->error = curl_error($this->handle);
-        }
-        else foreach(REST_Response::$properties as $name => $const) {
-            $r->$name = curl_getinfo($this->handle, $const);
-        }
+        return $this->response->id; // return a unique identifier
+    }
+    
+    /**
+     * Fetch the response
+     * @param  array
+     * @return REST_Response
+     */
+    public function fetch()
+    {
+        $r = $this->response;
+        $this->response = null;
         return $r;
     }
     
-    public function fetch()
+    public function getInfo($k = null)
     {
-    }
-    
-    public function getInfo()
-    {
+        $t = microtime(true) - $this->time;
+        $a =  array(
+            'requests'      => 1,
+            'time'          => round($t, 2),
+        );
+        if (is_null($k) or !isset($a[$k])) {
+            return $a;
+        } else {
+            return $a[$k];
+        }
     }
 }

@@ -10,8 +10,8 @@ require_once 'REST/Request.php';
 class REST_ClientTest extends PHPUnit_Framework_TestCase
 {
 
-    private $test_host = 'localhost';
-    private $test_port = 80;
+    private $test_host  = 'localhost';
+    private $test_port  = 80;
     private $http_proxy = null;
     
     private $sync;

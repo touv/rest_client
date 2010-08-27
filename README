@@ -59,3 +59,49 @@ echo $o->headers['x-powered-by'];
 echo $o->headers['location'];
 
 ?>
+
+Advanced usage
+--------------
+
+<?php
+
+require_once 'REST/Client.php';
+
+$rc = REST_Client::factory('async', array('queue_size' => 30)); // for huge request quantities
+// $rc = REST_Client::factory('sync'); // for few request (but REST_EasyClient is easier to use)
+
+$r = REST_Request::newInstance()
+        ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)
+        ->setMethod('GET')->setUrl('/')
+        ->setAuth('kerphi','secret')
+        ->setHttpProxy(getenv('http_proxy'));
+
+// GET Method : 5000 requests !
+for($i = 0; $i < 5000; $i++) {
+    $id = $rc->fire($r);
+    
+    // start handling results before firing is finished
+    if ($i > $rc->getOption('queue_size')) {
+        while($response = $rc->fetch()) {
+            var_dump($response);
+        }
+    }
+}
+// continue to handle results
+while($response = $rc->fetch()) {
+    var_dump($response);
+}
+
+// GET Method (2)
+$id = $rc->fire($r->get('/maressource'));
+while($response = $rc->fetch()) {
+    var_dump($response);
+}
+
+// PUT Method
+$id = $rc->fire($r->put('/maressource', 'DATA'));
+while($response = $rc->fetch()) {
+    var_dump($response);
+}
+
+?>

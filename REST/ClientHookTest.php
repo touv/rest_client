@@ -61,4 +61,18 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
         $this->assertContains('fire', $this->hook_flags);
         $this->assertContains('fetch', $this->hook_flags);
     }
+    
+    function test_hook_async()
+    {
+        $r = REST_Request::newInstance()
+                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)
+                ->setHttpProxy($this->http_proxy);
+
+        $this->async->fire($r->get('/'));
+        if ($resp = $this->async->fetch()) {
+            $this->assertEquals(200, $resp->code);
+        }
+        $this->assertContains('fire', $this->hook_flags);
+        $this->assertContains('fetch', $this->hook_flags);
+    }    
 }

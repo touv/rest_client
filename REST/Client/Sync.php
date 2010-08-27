@@ -100,12 +100,9 @@ class REST_Client_Sync extends REST_Client
         
         // launch the fire hooks
         foreach($this->fire_hook as $hook) {
-            $request = call_user_func($hook, $request, $this->request_id, $this);
-            // this hook did not returns an object
-            // => it wants to stop the fire
-            if (!is_object($request)) {
-                return false;
-            }
+            $ret = call_user_func($hook, $request, $this->request_id, $this);
+            // this hook want to stop the fire ?
+            if ($ret === false) return false;
         }
 
         // configure curl client
@@ -139,12 +136,7 @@ class REST_Client_Sync extends REST_Client
         
         // launch the fetch hooks
         foreach($this->fetch_hook as $hook) {
-            $response = call_user_func($hook, $response, $response->id, $this);
-            // this hook did not returns an object
-            // => it wants to stop the fetch
-            if (!is_object($response)) {
-                return false;
-            }
+            call_user_func($hook, $response, $response->id, $this);
         }
         
         return $response;

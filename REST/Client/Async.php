@@ -128,20 +128,30 @@ class REST_Client_Async extends REST_Client
 
     /**
      * Launch an asynchrone request
+     * returns the request identifier of false if fire has been aborted
      * @param  array
-     * @return integer the request identifier
+     * @return integer or false 
      */
-    public function fire(REST_Request $c)
+    public function fire(REST_Request $request)
     {
         if ($this->handles === 0) $this->init();
-        $this->stack[++$this->handles] = array(clone $c, null, null);
+        $this->handles++;
+
+        // launch the fire hooks
+        foreach($this->fire_hook as $hook) {
+            $ret = call_user_func($hook, $request, $this->handles, $this);
+            // this hook want to stop the fire ?
+            if ($ret === false) return false;
+        }
+
+        $this->stack[$this->handles] = array(clone $request, null, null);
         $this->tick();
         return $this->handles;
     }
 
     /**
      * Check for the finished request and return corresponding REST_Response
-     * @return REST_Response or false
+     * @return REST_Response or false if fetch is finished 
      */
     public function fetch()
     {
@@ -152,6 +162,12 @@ class REST_Client_Async extends REST_Client
                 $this->stack[$k][2] =  null;
                 $this->stack[$k] = null;
                 unset($this->stack[$k]);
+                
+                // launch the fetch hooks
+                foreach($this->fetch_hook as $hook) {
+                    call_user_func($hook, $value[2], $value[2]->id, $this);
+                }
+
                 return $value[2]; // returns REST_Response instance
             }
             ++$this->fetchs_null;

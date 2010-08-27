@@ -61,21 +61,26 @@ class REST_Response
     public $type;
     public $time;
     public $length;
-    public $error = '';
 
+    private $errno = CURLE_OK;
+    public  $error = '';
 
-    private $errno = false;
-
-    function __construct($http_response, $error = false) 
+    function __construct($http_response, $errno = false, $error = '') 
     {
         list($this->headers, $this->content) = self::parse_http_response($http_response);
-        $this->errno = $error;
+        $this->errno = $errno;
+        $this->error = $error;
     }
 
     public function isError() 
     {
-        return $this->errno == 0 ? false : $this->errno;
+        return $this->errno == CURLE_OK ? false : $this->errno;
     }
+    
+    public function errorMessage()
+    {
+        return $this->error;
+    }    
 
     static function parse_http_response ($string) 
     {

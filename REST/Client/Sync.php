@@ -89,39 +89,65 @@ class REST_Client_Sync extends REST_Client
     
     /**
      * Launch a synchrone request
+     * returns the request identifier or false if fire is aborted
      * @param  array
-     * @return integer the request identifier
+     * @return integer or false
      */
     public function fire(REST_Request $request)
-    {        
+    {
+        $this->request_id++;
         $request->setCurlOption(CURLOPT_USERAGENT, 'REST_Client/'.self::$version);
+        
+        // launch the fire hooks
+        foreach($this->fire_hook as $hook) {
+            $request = call_user_func($hook, $request, $this->request_id, $this);
+            // this hook did not returns an object
+            // => it wants to stop the fire
+            if (!is_object($request)) {
+                return false;
+            }
+        }
 
+        // configure curl client
         curl_setopt_array($this->handle, $request->toCurl());
 
         if (!is_resource($this->handle))
             return trigger_error(sprintf('%s::%s() cURL session was lost', __CLASS__, $method), E_USER_ERROR);
         
+        // send the request and create the response object
         $this->response = new REST_Response(curl_exec($this->handle), curl_errno($this->handle), curl_error($this->handle));
         if (!$this->response->isError()) {
             foreach(REST_Response::$properties as $name => $const) {
                 $this->response->$name = curl_getinfo($this->handle, $const);
             }
         }
-        $this->response->id = ++$this->request_id;
+        $this->response->id = $this->request_id;
 
         return $this->response->id; // return a unique identifier
     }
     
     /**
      * Fetch the response
+     * returns the response object or false if fetch is aborted
      * @param  array
-     * @return REST_Response
+     * @return REST_Response or false
      */
     public function fetch()
     {
-        $r = $this->response;
+        $response = $this->response;
         $this->response = null;
-        return $r;
+        
+        // launch the fetch hooks
+        foreach($this->fetch_hook as $hook) {
+            $response = call_user_func($hook, $response, $response->id, $this);
+            // this hook did not returns an object
+            // => it wants to stop the fetch
+            if (!is_object($response)) {
+                return false;
+            }
+        }
+        
+        return $response;
     }
     
     public function getInfo($k = null)

@@ -56,7 +56,10 @@ abstract class REST_Client
 {
     static  $version = '1.1';
     private $options = array();
-
+    
+    protected $fire_hook = array();
+    protected $fetch_hook = array();
+    
     /**
      * REST_Client factory that can be used to create REST_Client_Async or REST_Client_Sync instances.
      * @return REST_Client
@@ -105,7 +108,39 @@ abstract class REST_Client
             return isset($this->options[$name]) ? $this->options[$name] : null;
         }
     }
+
+    /**
+     * Register a fire hook
+     * @param callback
+     * @param REST_Client
+     */
+    public function addFireHook($callback)
+    {
+        if (!is_callable($callback)) {
+            throw Exception('FireHook callback is not callable');
+        }
+        if (!in_array($callback, $this->fire_hook)) {
+            $this->fire_hook[] = $callback;
+        }
+        return $this;
+    }
     
+    /**
+     * Register a fetch hook
+     * @param callback
+     * @param REST_Client
+     */
+    public function addFetchHook($callback)
+    {
+        if (!is_callable($callback)) {
+            throw Exception('FetchHook callback is not callable');
+        }
+        if (!in_array($callback, $this->fetch_hook)) {
+            $this->fetch_hook[] = $callback;
+        }
+        return $this;
+    }    
+
     /**
      * Launch a request
      * @param  array
@@ -119,5 +154,6 @@ abstract class REST_Client
      * @return REST_Response
      */
     abstract public function fetch();
+ 
 
 }

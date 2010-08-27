@@ -93,6 +93,20 @@ abstract class REST_Client
     }
     
     /**
+     * Retrieve one option value
+     * @param string
+     * @param mixed
+     */
+    public function getOption($name = null)
+    {
+        if (is_null($name)) {
+            return $this->options;
+        } else {
+            return isset($this->options[$name]) ? $this->options[$name] : null;
+        }
+    }
+    
+    /**
      * Launch a request
      * @param  array
      * @return integer the request identifier

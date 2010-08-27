@@ -270,11 +270,13 @@ class REST_Request
      */
     public function setHttpProxy($proxy)
     {
-        $proxy = str_replace('http://','',$proxy);
-        list($host, $port) = explode(':',$proxy);
-        $this->setCurlOption(CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
-        $this->setCurlOption(CURLOPT_PROXY,     $host);
-        $this->setCurlOption(CURLOPT_PROXYPORT, $port);
+        $proxy = (string)trim(str_replace('http://','',$proxy));
+        if (!empty($proxy)) {
+            list($host, $port) = explode(':',$proxy);
+            $this->setCurlOption(CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
+            $this->setCurlOption(CURLOPT_PROXY,     $host);
+            $this->setCurlOption(CURLOPT_PROXYPORT, $port);
+        }
         return $this;
     }    
 }

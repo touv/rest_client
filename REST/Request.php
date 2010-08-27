@@ -85,6 +85,17 @@ class REST_Request
         $this->curl_options[$k] = $v;
         return $this;
     }
+
+    /**
+     * Setup CURL options
+     * @return REST_Puller
+     */
+    public function setCurlOptions(array $a)
+    {
+        foreach($a as $k => $v)
+            $this->setCurlOption($k, $v);
+        return $this;
+    }
     
     /**
      * Complète intelligement les attributs par leurs bonnes valeurs

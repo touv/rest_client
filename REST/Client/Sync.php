@@ -102,7 +102,10 @@ class REST_Client_Sync extends REST_Client
         foreach($this->fire_hook as $hook) {
             $ret = call_user_func($hook, $request, $this->request_id, $this);
             // this hook want to stop the fire ?
-            if ($ret === false) return false;
+            if ($ret === false) {
+                $this->response = false;
+                return false;
+            }
         }
 
         // configure curl client

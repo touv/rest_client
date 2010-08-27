@@ -42,6 +42,38 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
         }
         $this->assertEquals(1, $this->sync->getInfo('requests'));
     }
+    
+    function test_medium_sync()
+    {
+        $this->async->setOption('queue_size', 3);
+
+        $r = REST_Request::newInstance()
+                ->setProtocol('http')->setHost('fr.php.net')
+                ->setHttpProxy($this->http_proxy);
+
+        $dom     = $this->sync->fire($r->get('/dom'));
+        $curl    = $this->sync->fire($r->get('/curl'));
+        $strings = $this->sync->fire($r->get('/strings'));
+        $pcre    = $this->sync->fire($r->get('/pcre'));
+        $xml     = $this->sync->fire($r->get('/xml'));
+        $ftp     = $this->sync->fire($r->get('/ftp'));
+        $sockets = $this->sync->fire($r->get('/sockets'));
+
+        $z = array();
+        while($response = $this->sync->fetch()) {
+            $z[$response->id] = $response->content;
+        }
+
+        $this->assertContains('PHP: cURL - Manual', $z[$curl]);
+        $this->assertContains('PHP: DOM - Manual',  $z[$dom]);
+        $this->assertContains('id="book.strings"', $z[$strings]);
+        $this->assertContains('PHP: PCRE - Manual', $z[$pcre]);
+        $this->assertContains('id="book.xml"', $z[$xml]);
+        $this->assertContains('PHP: FTP - Manual', $z[$ftp]);
+        $this->assertContains('PHP: Sockets - Manual', $z[$sockets]);
+
+        $this->assertEquals(7, $this->sync->getInfo('requests'));
+    }    
 
     function test_small_async()
     {
@@ -86,48 +118,5 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals(7, $this->async->getInfo('requests'));
     }
-
-    function test_large_async()
-    {
-        $requests = 2500;
-        $clients = 30;
-        $this->async->setOption('queue_size', $clients);
-
-        $r = REST_Request::newInstance()
-                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)
-                ->setMethod('GET')->setUrl('/');
-        for($i= 0; $i < $requests; $i++) {
-            $this->async->fire($r);
-        }
-
-        while($response = $this->async->fetch()) {
-            $this->assertEquals(200, $response->code);
-        }
-
-        $this->assertEquals($requests, $this->async->getInfo('requests'));
-    }
-
-    function test_huge_async()
-    {
-        $requests = 50000;
-        $clients = 150;
-        $this->async->setOption('queue_size', $clients);
-
-        $r = REST_Request::newInstance()
-                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)
-                ->setMethod('GET')->setUrl('/');
-        for($i= 0;$i < $requests; $i++) {
-            $this->async->fire($r);
-            if ($i > $clients) if ($response =  $this->async->fetch()) 
-                $this->assertEquals(200, $response->code);
-        }
-
-        while($response = $this->async->fetch()) {
-            $this->assertEquals(200, $response->code);
-        }
-
-        $this->assertEquals($requests, $this->async->getInfo('requests'));
-    }
-
 
 }

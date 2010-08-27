@@ -57,12 +57,13 @@ class REST_Client_Sync extends REST_Client
         'verbose'     => null,
     );
 
-    private $handle   = null;
-    private $response = null;
-    private static $request_id = 0;
+    private $handle    = null;
+    private $responses = array();
+    private static $handles = 0;
     
     // for stats
     private $time = 0;
+    private $requests = 0;
 
     public function __construct($options = array())
     {
@@ -95,15 +96,15 @@ class REST_Client_Sync extends REST_Client
      */
     public function fire(REST_Request $request)
     {
-        $this->request_id++;
+        $this->handles++; // create a fresh request identifier
         $request->setCurlOption(CURLOPT_USERAGENT, 'REST_Client/'.self::$version);
         
         // launch the fire hooks
         foreach($this->fire_hook as $hook) {
-            $ret = call_user_func($hook, $request, $this->request_id, $this);
+            $ret = call_user_func($hook, $request, $this->handles, $this);
             // this hook want to stop the fire ?
             if ($ret === false) {
-                $this->response = false;
+                $this->handles--;
                 return false;
             }
         }
@@ -115,15 +116,17 @@ class REST_Client_Sync extends REST_Client
             return trigger_error(sprintf('%s::%s() cURL session was lost', __CLASS__, $method), E_USER_ERROR);
         
         // send the request and create the response object
-        $this->response = new REST_Response(curl_exec($this->handle), curl_errno($this->handle), curl_error($this->handle));
-        if (!$this->response->isError()) {
+        $this->requests++;
+        $response = new REST_Response(curl_exec($this->handle), curl_errno($this->handle), curl_error($this->handle));
+        if (!$response->isError()) {
             foreach(REST_Response::$properties as $name => $const) {
-                $this->response->$name = curl_getinfo($this->handle, $const);
+                $response->$name = curl_getinfo($this->handle, $const);
             }
         }
-        $this->response->id = $this->request_id;
+        $response->id = $this->handles;
 
-        return $this->response->id; // return a unique identifier
+        $this->responses[] = $response; // append the response to the stack
+        return $this->handles; // return a unique identifier for the request
     }
     
     /**
@@ -134,9 +137,9 @@ class REST_Client_Sync extends REST_Client
      */
     public function fetch()
     {
-        $response = $this->response;
-        $this->response = null;
-        
+        $response = array_pop($this->responses);
+        if (is_null($response)) return false;
+
         // launch the fetch hooks
         foreach($this->fetch_hook as $hook) {
             call_user_func($hook, $response, $response->id, $this);
@@ -149,7 +152,7 @@ class REST_Client_Sync extends REST_Client
     {
         $t = microtime(true) - $this->time;
         $a =  array(
-            'requests'      => 1,
+            'requests'      => $this->requests,
             'time'          => round($t, 2),
         );
         if (is_null($k) or !isset($a[$k])) {

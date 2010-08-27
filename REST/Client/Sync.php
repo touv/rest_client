@@ -61,15 +61,17 @@ class REST_Client_Sync extends REST_Client
     private $responses = array();
     private static $handles = 0;
     
+<<<<<<< HEAD
     // for stats
     private $time = 0;
     private $requests = 0;
 
+=======
+>>>>>>> 4061abde7758606546685b2309456b6a4225168a
     public function __construct($options = array())
     {
         $this->options = $options;
         $this->handle = curl_init();
-        $this->time = microtime(true);
     }
 
     public function __destruct()
@@ -96,7 +98,15 @@ class REST_Client_Sync extends REST_Client
      */
     public function fire(REST_Request $request)
     {
+<<<<<<< HEAD
         $this->handles++; // create a fresh request identifier
+=======
+        if ($this->loads === 0)
+            $this->time = microtime(true);
+        ++$this->loads;
+
+        $this->request_id++;
+>>>>>>> 4061abde7758606546685b2309456b6a4225168a
         $request->setCurlOption(CURLOPT_USERAGENT, 'REST_Client/'.self::$version);
         
         // launch the fire hooks
@@ -104,7 +114,11 @@ class REST_Client_Sync extends REST_Client
             $ret = call_user_func($hook, $request, $this->handles, $this);
             // this hook want to stop the fire ?
             if ($ret === false) {
+<<<<<<< HEAD
                 $this->handles--;
+=======
+                ++$this->loads_null;
+>>>>>>> 4061abde7758606546685b2309456b6a4225168a
                 return false;
             }
         }
@@ -112,13 +126,22 @@ class REST_Client_Sync extends REST_Client
         // configure curl client
         curl_setopt_array($this->handle, $request->toCurl());
 
-        if (!is_resource($this->handle))
+        if (!is_resource($this->handle)) {
+            ++$this->loads_null;
             return trigger_error(sprintf('%s::%s() cURL session was lost', __CLASS__, $method), E_USER_ERROR);
+        }
         
         // send the request and create the response object
+<<<<<<< HEAD
         $this->requests++;
         $response = new REST_Response(curl_exec($this->handle), curl_errno($this->handle), curl_error($this->handle));
         if (!$response->isError()) {
+=======
+        $this->response = new REST_Response(curl_exec($this->handle), curl_errno($this->handle), curl_error($this->handle));
+        ++$this->requests;
+
+        if (!$this->response->isError()) {
+>>>>>>> 4061abde7758606546685b2309456b6a4225168a
             foreach(REST_Response::$properties as $name => $const) {
                 $response->$name = curl_getinfo($this->handle, $const);
             }
@@ -137,9 +160,18 @@ class REST_Client_Sync extends REST_Client
      */
     public function fetch()
     {
+<<<<<<< HEAD
         $response = array_pop($this->responses);
         if (is_null($response)) return false;
 
+=======
+        ++$this->fetchs;
+        ++$this->pulls;
+
+        $response = $this->response;
+        $this->response = null;
+        
+>>>>>>> 4061abde7758606546685b2309456b6a4225168a
         // launch the fetch hooks
         foreach($this->fetch_hook as $hook) {
             call_user_func($hook, $response, $response->id, $this);
@@ -148,6 +180,7 @@ class REST_Client_Sync extends REST_Client
         return $response;
     }
     
+<<<<<<< HEAD
     public function getInfo($k = null)
     {
         $t = microtime(true) - $this->time;
@@ -161,4 +194,6 @@ class REST_Client_Sync extends REST_Client
             return $a[$k];
         }
     }
+=======
+>>>>>>> 4061abde7758606546685b2309456b6a4225168a
 }

@@ -75,6 +75,38 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
         $this->assertEquals(7, $this->sync->getInfo('requests'));
     }    
 
+    function test_medium_sync()
+    {
+        $r = REST_Request::newInstance()
+                ->setProtocol('http')->setHost('fr.php.net')
+                ->setHttpProxy($this->http_proxy);
+        $z = array();
+        $dom    = $this->sync->fire($r->get('/dom'));
+        $z[$dom] = $this->sync->fetch()->content;
+        $curl    = $this->sync->fire($r->get('/curl'));
+        $z[$curl] = $this->sync->fetch()->content;
+        $strings = $this->sync->fire($r->get('/strings'));
+        $z[$strings] = $this->sync->fetch()->content;
+        $pcre    = $this->sync->fire($r->get('/pcre'));
+        $z[$pcre] = $this->sync->fetch()->content;
+        $xml     = $this->sync->fire($r->get('/xml'));
+        $z[$xml] = $this->sync->fetch()->content;
+        $ftp     = $this->sync->fire($r->get('/ftp'));
+        $z[$ftp] = $this->sync->fetch()->content;
+        $sockets = $this->sync->fire($r->get('/sockets'));
+        $z[$sockets] = $this->sync->fetch()->content;
+
+        $this->assertContains('PHP: DOM - Manual',  $z[$dom]);
+        $this->assertContains('id="book.strings"', $z[$strings]);
+        $this->assertContains('PHP: PCRE - Manual', $z[$pcre]);
+        $this->assertContains('id="book.xml"', $z[$xml]);
+        $this->assertContains('PHP: FTP - Manual', $z[$ftp]);
+        $this->assertContains('PHP: Sockets - Manual', $z[$sockets]);
+
+        $this->assertEquals(7, $this->sync->getInfo('requests'));
+    }
+
+
     function test_small_async()
     {
         $r = REST_Request::newInstance()

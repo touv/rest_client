@@ -12,7 +12,8 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
 
     private $test_host = 'localhost';
     private $test_port = 80;
-
+    private $http_proxy = null;
+    
     private $sync;
     private $async;
     
@@ -20,6 +21,10 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
     {
         $this->sync    = REST_Client::factory('sync',  array('verbose' => false));
         $this->async   = REST_Client::factory('async', array('verbose' => false));
+        
+        if (getenv('http_proxy')) {
+            $this->http_proxy = getenv('http_proxy');
+        }
     }
     function tearDown()
     {
@@ -30,7 +35,8 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
     {
         $r = REST_Request::newInstance()
                 ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)
-                ->setMethod('GET')->setUrl('/');
+                ->setMethod('GET')->setUrl('/')
+                ->setHttpProxy($this->http_proxy);
         $this->sync->fire($r);
         if ($resp = $this->sync->fetch()) {
             $this->assertEquals(200, $resp->code);
@@ -42,8 +48,9 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
     {
         $r = REST_Request::newInstance()
                 ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)
-                ->setMethod('GET')->setUrl('/');
-        $this->async->fire($r);
+                ->setMethod('GET')->setUrl('/')
+                ->setHttpProxy($this->http_proxy);
+        $id = $this->async->fire($r);
         if ($resp = $this->async->fetch()) {
             $this->assertEquals(200, $resp->code);
         }
@@ -54,7 +61,10 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
     {
         $this->async->setOption('queue_size', 3);
 
-        $r = REST_Request::newInstance()->setProtocol('http')->setHost('fr.php.net');
+        $r = REST_Request::newInstance()
+                ->setProtocol('http')->setHost('fr.php.net')
+                ->setHttpProxy($this->http_proxy);
+
         $dom     = $this->async->fire($r->get('/dom'));
         $curl    = $this->async->fire($r->get('/curl'));
         $strings = $this->async->fire($r->get('/strings'));
@@ -87,7 +97,8 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
 
         $r = REST_Request::newInstance()
                 ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)
-                ->setMethod('GET')->setUrl('/');
+                ->setMethod('GET')->setUrl('/')
+                ->setHttpProxy($this->http_proxy);
         for($i= 0; $i < $requests; $i++) {
             $this->async->fire($r);
         }
@@ -107,7 +118,8 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
 
         $r = REST_Request::newInstance()
                 ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)
-                ->setMethod('GET')->setUrl('/');
+                ->setMethod('GET')->setUrl('/')
+                ->setHttpProxy($this->http_proxy);
         for($i= 0;$i < $requests; $i++) {
             $this->async->fire($r);
             if ($i > $clients) if ($response =  $this->async->fetch()) 

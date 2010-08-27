@@ -1,7 +1,7 @@
 <?php
 // vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 fdm=marker encoding=utf8 :
 /**
- * REST_Client
+ * REST_Client_Async
  *
  * Copyright (c) 2010, Nicolas Thouvenin
  *
@@ -37,9 +37,11 @@
  * @copyright 2010 Nicolas Thouvenin
  * @license   http://opensource.org/licenses/bsd-license.php BSD Licence
  */
-require_once 'REST/Response.php';
+
+require_once 'REST/Client.php';
+
 /**
- * 
+ * An Asynchronous REST_Client
  *
  * @category  REST
  * @package   REST_Client
@@ -48,14 +50,15 @@ require_once 'REST/Response.php';
  * @copyright 2010 Nicolas Thouvenin
  * @license   http://opensource.org/licenses/bsd-license.php BSD Licence
  */
-class REST_Puller
+class REST_Client_Async extends REST_Client
 {
     protected $options = array(
         'queue_size'  => null,
         'fetch_delay' => 0,    
         'pull_delay'  => 0,
-        'verbose'       => null,
+        'verbose'     => null,
     );
+
     protected $mh = null;
     protected $running = 0;
     protected $stack = array();
@@ -71,37 +74,26 @@ class REST_Puller
     protected $flag = false;
     protected $time = 0;
 
-
     /**
      * Constructor
      * @param array
      */
-    protected function __construct($options = array())
+    public function __construct($options = array())
     {
         $this->options = array_merge($this->options, $options);
-
-        $this->mh = curl_multi_init();
-    }
-
-    /**
-     * Create a new puller instance
-     * @return REST_Puller
-     */
-    public static function newInstance($options = array())
-    {
-        return new self($options);
+        $this->mh      = curl_multi_init();
     }
 
     /**
      * Destructor
      */
-    function __destruct()
+    public function __destruct()
     {
         curl_multi_close($this->mh);
     }
 
     /**
-     * setOption
+     * Register one option
      * @param string
      * @param mixed
      * @return boolean
@@ -122,14 +114,14 @@ class REST_Puller
      */
     protected function init()
     {
-        settype($this->options['queue_size'], 'integer');
+        settype($this->options['queue_size'],  'integer');
         settype($this->options['fetch_delay'], 'integer');
-        settype($this->options['pull_delay'], 'integer');
-        settype($this->options['verbose'], 'boolean');
+        settype($this->options['pull_delay'],  'integer');
+        settype($this->options['verbose'],     'boolean');
 
         if ($this->options['queue_size'] <= 0) $this->options['queue_size'] = 10;
         if ($this->options['fetch_delay'] < 0) $this->options['fetch_delay'] = 0;
-        if ($this->options['pull_delay'] < 0) $this->options['pull_delay'] = 0;
+        if ($this->options['pull_delay'] < 0)  $this->options['pull_delay'] = 0;
 
         $this->time = microtime(true);
     }
@@ -137,7 +129,7 @@ class REST_Puller
     /**
      * Launch an asynchrone request
      * @param  array
-     * @return integer
+     * @return integer the request identifier
      */
     public function fire(REST_Request $c)
     {
@@ -146,7 +138,6 @@ class REST_Puller
         $this->tick();
         return $this->handles;
     }
-
 
     /**
      * Check for the finished request and return corresponding REST_Response
@@ -240,7 +231,9 @@ class REST_Puller
             $f = false;
             foreach($this->stack as $k => &$value) {
                 if (is_null($value[1]) or $value[1] !== $done['handle']) continue;
-                $value[2] = new REST_Response(curl_multi_getcontent($done['handle']));
+                $value[2] = new REST_Response(curl_multi_getcontent($done['handle']),
+                                              $done['result'],
+                                              curl_error($done['handle']));
                 foreach(REST_Response::$properties as $name => $const) {
                     $value[2]->$name = curl_getinfo($done['handle'], $const);
                 }

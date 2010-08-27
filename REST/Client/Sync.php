@@ -1,7 +1,7 @@
 <?php
 // vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 fdm=marker encoding=utf8 :
 /**
- * REST_Client
+ * REST_Client_Sync
  *
  * Copyright (c) 2010, Nicolas Thouvenin
  *
@@ -38,11 +38,10 @@
  * @license   http://opensource.org/licenses/bsd-license.php BSD Licence
  */
 
-require_once 'REST/Response.php';
-require_once 'REST/Request.php';
+require_once 'REST/Client.php';
 
 /**
- * a simple REST Client in PHP
+ * A synchronous REST_Client
  *
  * @category  REST
  * @package   REST_Client
@@ -51,32 +50,21 @@ require_once 'REST/Request.php';
  * @copyright 2010 Nicolas Thouvenin
  * @license   http://opensource.org/licenses/bsd-license.php BSD Licence
  */
-class REST_Client
+class REST_Client_Sync extends REST_Client
 {
-    static $version = '1.1';
     private $options = array();
     private $handle;
 
-    protected function __construct($options = array())
+    public function __construct($options = array())
     {
         $this->options = $options;
         $this->handle = curl_init();
     }
 
-    /**
-     * Create a new REST_Client instance
-     * @return REST_Puller
-     */
-    public static function newInstance($options = array())
-    {
-        return new self($options);
-    }
-
-    function __destruct()
+    public function __destruct()
     {
         curl_close($this->handle);
     }
-    
     
     /**
      * setOption (not used)
@@ -103,7 +91,7 @@ class REST_Client
         if (!is_resource($this->handle))
             return trigger_error(sprintf('%s::%s() cURL session was lost', __CLASS__, $method), E_USER_ERROR);
 
-        $r = new REST_Response(curl_exec($this->handle), curl_errno($this->handle));
+        $r = new REST_Response(curl_exec($this->handle), curl_errno($this->handle), curl_error($this->handle));
         if ($r->isError()) {
             $r->error = curl_error($this->handle);
         }
@@ -111,5 +99,13 @@ class REST_Client
             $r->$name = curl_getinfo($this->handle, $const);
         }
         return $r;
+    }
+    
+    public function fetch()
+    {
+    }
+    
+    public function getInfo()
+    {
     }
 }

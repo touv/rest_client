@@ -135,13 +135,16 @@ class REST_Client_Async extends REST_Client
     public function fire(REST_Request $request)
     {
         if ($this->handles === 0) $this->init();
-        $this->handles++;
+        $this->handles++; // create a fresh internal request id
 
         // launch the fire hooks
         foreach($this->fire_hook as $hook) {
             $ret = call_user_func($hook, $request, $this->handles, $this);
             // this hook want to stop the fire ?
-            if ($ret === false) return false;
+            if ($ret === false) {
+                $this->handles--; // reset the internal request id because nothing has been fired
+                return false;
+            }
         }
 
         $this->stack[$this->handles] = array(clone $request, null, null);
@@ -191,6 +194,7 @@ class REST_Client_Async extends REST_Client
     {
 //        if ($this->options['verbose']) 
 //            echo "MUSE : ".self::convert(memory_get_usage(true)).'('.(sizeof($this->stack) === $this->handles ? '+' : '-').')'."\n";
+        if ($this->handles === 0) return false; // do not fetch responses if no requests has be fired
         if ($this->requests !== 0 and $this->handles === $this->requests and $this->requests === $this->responses) return false;
         $c = 0;
         if ($this->flag === false) {

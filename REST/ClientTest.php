@@ -118,46 +118,4 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals(7, $this->async->getInfo('requests'));
     }
-
-    function test_large_async()
-    {
-        $requests = 2500;
-        $clients = 30;
-        $this->async->setOption('queue_size', $clients);
-
-        $r = REST_Request::newInstance()
-                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)
-                ->setMethod('GET')->setUrl('/');
-        for($i= 0; $i < $requests; $i++) {
-            $this->async->fire($r);
-        }
-
-        while($response = $this->async->fetch()) {
-            $this->assertEquals(200, $response->code);
-        }
-
-        $this->assertEquals($requests, $this->async->getInfo('requests'));
-    }
-
-    function test_huge_async()
-    {
-        $requests = 50000;
-        $clients = 150;
-        $this->async->setOption('queue_size', $clients);
-
-        $r = REST_Request::newInstance()
-                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)
-                ->setMethod('GET')->setUrl('/');
-        for($i= 0;$i < $requests; $i++) {
-            $this->async->fire($r);
-            if ($i > $clients) if ($response =  $this->async->fetch()) 
-                $this->assertEquals(200, $response->code);
-        }
-
-        while($response = $this->async->fetch()) {
-            $this->assertEquals(200, $response->code);
-        }
-
-        $this->assertEquals($requests, $this->async->getInfo('requests'));
-    }
 }

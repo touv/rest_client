@@ -34,8 +34,7 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
                             ->addFetchHook(array($this,'fetch_hook'));
 
         $r = REST_Request::newInstance()
-                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)
-                ->setHttpProxy($this->http_proxy);
+                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port);
 
         $rest->fire($r->get('/'));
         if ($resp = $rest->fetch()) {
@@ -52,8 +51,7 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
                             ->addFetchHook(array($this,'fetch_hook'));
 
         $r = REST_Request::newInstance()
-                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)
-                ->setHttpProxy($this->http_proxy);
+                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port);
 
         $rest->fire($r->get('/'));
         if ($resp = $rest->fetch()) {
@@ -73,8 +71,7 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
                             ->addFetchHook(array($this,'fetch_hook2'));
 
         $r = REST_Request::newInstance()
-                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)
-                ->setHttpProxy($this->http_proxy);
+                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port);
 
         $rest->fire($r->get('/'));
         if ($resp = $rest->fetch()) {
@@ -94,8 +91,7 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
                     ->addFireHook(array($this,'fire_hook_abort'));
 
         $r = REST_Request::newInstance()
-                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)
-                ->setHttpProxy($this->http_proxy);
+                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port);
 
         $rest->fire($r->get('/'));
 
@@ -112,8 +108,7 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
                     ->addFetchHook(array($this,'fetch_hook_modify'));
 
         $r = REST_Request::newInstance()
-                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)
-                ->setHttpProxy($this->http_proxy);
+                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port);
 
         $rest->fire($r->get('/'));
         $resp = $rest->fetch();

@@ -61,13 +61,6 @@ class REST_Client_Sync extends REST_Client
     private $responses = array();
     private static $handles = 0;
     
-<<<<<<< Temporary merge branch 1
-    // for stats
-    private $time = 0;
-    private $requests = 0;
-
-=======
->>>>>>> Temporary merge branch 2
     public function __construct($options = array())
     {
         $this->options = $options;
@@ -98,15 +91,11 @@ class REST_Client_Sync extends REST_Client
      */
     public function fire(REST_Request $request)
     {
-<<<<<<< Temporary merge branch 1
-        $this->handles++; // create a fresh request identifier
-=======
         if ($this->loads === 0)
             $this->time = microtime(true);
         ++$this->loads;
 
-        $this->request_id++;
->>>>>>> Temporary merge branch 2
+        $this->handles++; // create a fresh request identifier
         $request->setCurlOption(CURLOPT_USERAGENT, 'REST_Client/'.self::$version);
         
         // launch the fire hooks
@@ -114,11 +103,8 @@ class REST_Client_Sync extends REST_Client
             $ret = call_user_func($hook, $request, $this->handles, $this);
             // this hook want to stop the fire ?
             if ($ret === false) {
-<<<<<<< Temporary merge branch 1
-                $this->handles--;
-=======
                 ++$this->loads_null;
->>>>>>> Temporary merge branch 2
+                $this->handles--;
                 return false;
             }
         }
@@ -132,16 +118,9 @@ class REST_Client_Sync extends REST_Client
         }
         
         // send the request and create the response object
-<<<<<<< Temporary merge branch 1
-        $this->requests++;
+        ++$this->requests;
         $response = new REST_Response(curl_exec($this->handle), curl_errno($this->handle), curl_error($this->handle));
         if (!$response->isError()) {
-=======
-        $this->response = new REST_Response(curl_exec($this->handle), curl_errno($this->handle), curl_error($this->handle));
-        ++$this->requests;
-
-        if (!$this->response->isError()) {
->>>>>>> Temporary merge branch 2
             foreach(REST_Response::$properties as $name => $const) {
                 $response->$name = curl_getinfo($this->handle, $const);
             }
@@ -160,18 +139,12 @@ class REST_Client_Sync extends REST_Client
      */
     public function fetch()
     {
-<<<<<<< Temporary merge branch 1
-        $response = array_pop($this->responses);
-        if (is_null($response)) return false;
-
-=======
         ++$this->fetchs;
         ++$this->pulls;
 
-        $response = $this->response;
-        $this->response = null;
-        
->>>>>>> Temporary merge branch 2
+        $response = array_pop($this->responses);
+        if (is_null($response)) return false;
+
         // launch the fetch hooks
         foreach($this->fetch_hook as $hook) {
             call_user_func($hook, $response, $response->id, $this);
@@ -180,20 +153,4 @@ class REST_Client_Sync extends REST_Client
         return $response;
     }
     
-<<<<<<< Temporary merge branch 1
-    public function getInfo($k = null)
-    {
-        $t = microtime(true) - $this->time;
-        $a =  array(
-            'requests'      => $this->requests,
-            'time'          => round($t, 2),
-        );
-        if (is_null($k) or !isset($a[$k])) {
-            return $a;
-        } else {
-            return $a[$k];
-        }
-    }
-=======
->>>>>>> Temporary merge branch 2
 }

@@ -52,7 +52,11 @@ require_once 'REST/Client.php';
  */
 class REST_Client_Sync extends REST_Client
 {
-    private $options = array();
+    protected $options = array(
+        'queue_size'  => 1,
+        'verbose'     => null,
+    );
+
     private $handle   = null;
     private $response = null;
     private static $request_id = 0;

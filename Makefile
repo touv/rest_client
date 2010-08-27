@@ -11,10 +11,15 @@ all :
 	@echo "make push"
 
 
-test : REST_ClientTest REST_EasyClientTest
+test : REST_ClientTest REST_EasyClientTest REST_ClientHookTest
+test-stress : REST_ClientStressTest
 
 REST_ClientTest:
 	$(PHPUNIT) $@ REST/ClientTest.php
+REST_ClientStressTest:
+	$(PHPUNIT) $@ REST/ClientStressTest.php
+REST_ClientHookTest:
+	$(PHPUNIT) $@ REST/ClientHookTest.php
 REST_EasyClientTest:
 	$(PHPUNIT) $@ REST/EasyClientTest.php
 

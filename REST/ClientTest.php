@@ -42,7 +42,7 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
         }
         $this->assertEquals(1, $this->sync->getInfo('requests'));
     }
-
+    
     function test_medium_sync()
     {
         $r = REST_Request::newInstance()
@@ -160,7 +160,4 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
 
         $this->assertEquals($requests, $this->async->getInfo('requests'));
     }
-
-
-
 }

@@ -132,6 +132,10 @@ class REST_Request
         }
         return $this;
     }
+    public function getProtocol()
+    {
+        return $this->protocol;
+    }
     
     /**
      * Hostname
@@ -142,6 +146,10 @@ class REST_Request
         $this->host = (string)$v;
         return $this;
     }
+    public function getHost()
+    {
+        return $this->host;
+    }    
     
     /**
      * Port
@@ -151,6 +159,10 @@ class REST_Request
     {
         $this->port = (integer)$v;
         return $this;
+    }
+    public function getPort()
+    {
+        return $this->port;
     }
     
     /**
@@ -162,6 +174,11 @@ class REST_Request
         $this->method = strtoupper($v);
         return $this;
     }
+    public function getMethod()
+    {
+        return $this->method;
+    }
+    
     
     /**
      * Url
@@ -171,6 +188,10 @@ class REST_Request
     {
         $this->url = (string)$v;
         return $this;
+    }
+    public function getURL()
+    {
+        return $this->url;
     }
     
     /**
@@ -182,6 +203,10 @@ class REST_Request
         $this->body = $v;
         return $this;
     }
+    public function getBody()
+    {
+        return $this->body;
+    }
     
     /**
      * Header HTTP
@@ -191,7 +216,17 @@ class REST_Request
     {
         // TODO
         return $this;
-    }    
+    }
+    public function getHeader($k)
+    {
+        // TODO
+        return '';
+    }
+    public function getHeaders()
+    {
+        // TODO
+        return array();
+    }
 
     /**
      * Convert REST_Request data to CURL format
@@ -274,6 +309,10 @@ class REST_Request
         $this->password = (string)$password;
         return $this;
     }
+    public function getAuth($user, $password)
+    {
+        return array($this->user, $this->password);
+    }    
     
     /**
      * Setup a HTTP proxy
@@ -289,5 +328,5 @@ class REST_Request
             $this->setCurlOption(CURLOPT_PROXYPORT, $port);
         }
         return $this;
-    }    
+    }
 }

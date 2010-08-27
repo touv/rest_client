@@ -275,7 +275,6 @@ class REST_Request
         $this->setCurlOption(CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
         $this->setCurlOption(CURLOPT_PROXY,     $host);
         $this->setCurlOption(CURLOPT_PROXYPORT, $port);
-        print_r($this);
         return $this;
     }    
 }

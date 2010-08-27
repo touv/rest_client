@@ -54,11 +54,20 @@ require_once 'REST/Request.php';
  */
 abstract class REST_Client
 {
-    static  $version = '1.1';
+    static  $version = '2.1';
     private $options = array();
     
     protected $fire_hook = array();
     protected $fetch_hook = array();
+
+    protected $requests = 0;
+    protected $loads = 0;
+    protected $loads_null = 0;
+    protected $fetchs = 0;
+    protected $fetchs_null = 0;
+    protected $pulls = 0;
+    protected $pulls_null = 0;
+    protected $time = 0;
     
     /**
      * REST_Client factory that can be used to create REST_Client_Async or REST_Client_Sync instances.
@@ -80,6 +89,7 @@ abstract class REST_Client
     {
         $this->options = $options;
     }
+
     public function __destruct()
     {
     }
@@ -154,6 +164,26 @@ abstract class REST_Client
      * @return REST_Response
      */
     abstract public function fetch();
- 
+
+    /**
+     * Get some stats
+     * @return mixed
+     */
+    public function getInfo($k = null)
+    {
+        $t = microtime(true) - $this->time;
+        $a =  array(
+            'requests'      => $this->requests,
+            'requests_avg'  => round($this->requests/$this->loads, 2),
+            'requests_sec'  => round($this->requests/$t, 2),
+            'fetchs_hit'    => round(($this->fetchs - $this->fetchs_null) / $this->fetchs, 2),
+            'pulls_hit'     => round(($this->pulls - $this->pulls_null) / $this->pulls, 2),
+            'loads_hit'     => round(($this->loads - $this->loads_null) / $this->loads, 2),
+            'time'          => round($t, 2),
+        );
+        if (is_null($k) or !isset($a[$k])) return $a;
+        else return $a[$k];
+    }
+
 
 }

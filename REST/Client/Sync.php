@@ -61,14 +61,10 @@ class REST_Client_Sync extends REST_Client
     private $response = null;
     private static $request_id = 0;
     
-    // for stats
-    private $time = 0;
-
     public function __construct($options = array())
     {
         $this->options = $options;
         $this->handle = curl_init();
-        $this->time = microtime(true);
     }
 
     public function __destruct()
@@ -95,6 +91,10 @@ class REST_Client_Sync extends REST_Client
      */
     public function fire(REST_Request $request)
     {
+        if ($this->loads === 0)
+            $this->time = microtime(true);
+        ++$this->loads;
+
         $this->request_id++;
         $request->setCurlOption(CURLOPT_USERAGENT, 'REST_Client/'.self::$version);
         
@@ -102,17 +102,24 @@ class REST_Client_Sync extends REST_Client
         foreach($this->fire_hook as $hook) {
             $ret = call_user_func($hook, $request, $this->request_id, $this);
             // this hook want to stop the fire ?
-            if ($ret === false) return false;
+            if ($ret === false) {
+                ++$this->loads_null;
+                return false;
+            }
         }
 
         // configure curl client
         curl_setopt_array($this->handle, $request->toCurl());
 
-        if (!is_resource($this->handle))
+        if (!is_resource($this->handle)) {
+            ++$this->loads_null;
             return trigger_error(sprintf('%s::%s() cURL session was lost', __CLASS__, $method), E_USER_ERROR);
+        }
         
         // send the request and create the response object
         $this->response = new REST_Response(curl_exec($this->handle), curl_errno($this->handle), curl_error($this->handle));
+        ++$this->requests;
+
         if (!$this->response->isError()) {
             foreach(REST_Response::$properties as $name => $const) {
                 $this->response->$name = curl_getinfo($this->handle, $const);
@@ -131,6 +138,9 @@ class REST_Client_Sync extends REST_Client
      */
     public function fetch()
     {
+        ++$this->fetchs;
+        ++$this->pulls;
+
         $response = $this->response;
         $this->response = null;
         
@@ -142,17 +152,4 @@ class REST_Client_Sync extends REST_Client
         return $response;
     }
     
-    public function getInfo($k = null)
-    {
-        $t = microtime(true) - $this->time;
-        $a =  array(
-            'requests'      => 1,
-            'time'          => round($t, 2),
-        );
-        if (is_null($k) or !isset($a[$k])) {
-            return $a;
-        } else {
-            return $a[$k];
-        }
-    }
 }

@@ -62,17 +62,9 @@ class REST_Client_Async extends REST_Client
     protected $mh = null;
     protected $running = 0;
     protected $stack = array();
-    protected $requests = 0;
-    protected $responses = 0;
     protected $handles = 0;
-    protected $loads = 0;
-    protected $loads_null = 0;
-    protected $fetchs = 0;
-    protected $fetchs_null = 0;
-    protected $pulls = 0;
-    protected $pulls_null = 0;
+    protected $responses = 0;
     protected $flag = false;
-    protected $time = 0;
 
     /**
      * Constructor
@@ -177,11 +169,11 @@ class REST_Client_Async extends REST_Client
         return false;
     }
 
-    static function convert($size)
-    {
-        $unit=array('b','kb','mb','gb','tb','pb');
-        return @round($size/pow(1024,($i=floor(log($size,1024)))),2).' '.$unit[$i];
-    }
+//    static function convert($size)
+//    {
+//        $unit=array('b','kb','mb','gb','tb','pb');
+//        return @round($size/pow(1024,($i=floor(log($size,1024)))),2).' '.$unit[$i];
+//    }
 
     /**
      * tick
@@ -269,21 +261,6 @@ class REST_Client_Async extends REST_Client
     }
 
 
-    public function getInfo($k = null)
-    {
-        $t = microtime(true) - $this->time;
-        $a =  array(
-            'requests'      => $this->requests,
-            'requests_avg'  => round($this->requests/$this->loads, 2),
-            'requests_sec'  => round($this->requests/$t, 2),
-            'fetchs_hit'    => round(($this->fetchs - $this->fetchs_null) / $this->fetchs, 2),
-            'pulls_hit'     => round(($this->pulls - $this->pulls_null) / $this->pulls, 2),
-            'loads_hit'     => round(($this->loads - $this->loads_null) / $this->loads, 2),
-            'time'          => round($t, 2),
-        );
-        if (is_null($k) or !isset($a[$k])) return $a;
-        else return $a[$k];
-    }
 }
 
 

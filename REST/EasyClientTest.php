@@ -4,20 +4,39 @@
 ini_set('include_path', dirname(__FILE__).'/../'.PATH_SEPARATOR.ini_get('include_path'));
 
 require_once 'PHPUnit/Framework.php';
-require_once 'REST/Client.php';
+require_once 'REST/EasyClient.php';
 
 class REST_ClientTest extends PHPUnit_Framework_TestCase
 {
+    private $http_proxy = null;
+    
+    function setUp()
+    {
+        if (getenv('http_proxy')) {
+            $this->http_proxy = getenv('http_proxy');
+        }
+    }
+
+    function test_basic()
+    {
+        $response = REST_EasyClient::newInstance()->get('/');
+        $this->assertEquals($response->code, 200);
+        $this->assertContains('</html>', $response->content);
+    }
+
+    function test_retro()
+    {
+        $client = new REST_EasyClient('localhost');
+        $response = $client->get('/');
+        $this->assertEquals($response->code, 200);
+        $this->assertContains('</html>', $response->content);
+    }
+
     function test_get()
     {
-        $client = REST_Client::newInstance();
-
-        $request = REST_Request::newInstance()
-                ->setProtocol('http')->setHost('fr.php.net')
-                ->setMethod('GET')->setUrl('/curl');
-
-        $response = $client->fire($request);
+        $response = REST_EasyClient::newInstance('fr.php.net')->setHttpProxy($this->http_proxy)->get('/curl');
         $this->assertEquals($response->code, 200);
         $this->assertContains('PHP: cURL - Manual', $response->content);
     }
+
 }

@@ -263,4 +263,19 @@ class REST_Request
         $this->password = (string)$password;
         return $this;
     }
+    
+    /**
+     * Setup a HTTP proxy
+     * @return REST_Puller
+     */
+    public function setHttpProxy($proxy)
+    {
+        $proxy = str_replace('http://','',$proxy);
+        list($host, $port) = explode(':',$proxy);
+        $this->setCurlOption(CURLOPT_PROXYTYPE, CURLPROXY_HTTP);
+        $this->setCurlOption(CURLOPT_PROXY,     $host);
+        $this->setCurlOption(CURLOPT_PROXYPORT, $port);
+        print_r($this);
+        return $this;
+    }    
 }

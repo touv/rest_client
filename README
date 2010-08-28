@@ -5,7 +5,7 @@ Description
 -----------
 
 A simple and flexible REST client which uses PHP's Curl extension to send 
-HTTP queries. It has been specially designed to query a REST server.
+optimized HTTP queries. It has been specially designed to query a REST server.
 
 This package can be used to:
   - send synchronous requests 

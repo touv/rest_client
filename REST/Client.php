@@ -76,12 +76,24 @@ abstract class REST_Client
     public static function factory($type = 'sync', $options = array())
     {
         $class_name = 'REST_Client_'.ucfirst($type);
-        $path       = 'REST/Client/'.ucfirst($type).'.php';
-        if (!file_exists($path)) {
-            return false;
+
+        if (class_exists($class_name, false)) {
+            $instance = new $class_name($options);
         }
-        require_once $path;
-        $instance = new $class_name($options);
+        else {
+            $file = strtr($class_name, '_', '/').'.php';
+            $paths = explode(PATH_SEPARATOR, ini_get('include_path'));
+            foreach ($paths as $path) {
+                $fullpath = $path . '/' . $file;
+                if (file_exists($fullpath)) {
+                    include_once($fullpath);
+                    if (class_exists($class_name, false)) {
+                        $instance = new $class_name($options);
+                    }
+                    break;
+                }
+            }
+        }
         return $instance;
     }
 

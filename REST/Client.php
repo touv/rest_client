@@ -54,7 +54,7 @@ require_once 'REST/Request.php';
  */
 abstract class REST_Client
 {
-    static  $version = '2.1';
+    static  $version = '2.1.0';
     private $options = array();
     
     protected $fire_hook = array();
@@ -172,10 +172,15 @@ abstract class REST_Client
     
     /**
      * Get a request response (after a fire)
-     * @param  array
      * @return REST_Response
      */
     abstract public function fetch();
+
+    /**
+     * Check if fire queue is overflowed 
+     * @return boolean
+     */
+    abstract public function overflow();
 
     /**
      * Get some stats
@@ -193,8 +198,10 @@ abstract class REST_Client
             'loads_hit'     => round(($this->loads - $this->loads_null) / $this->loads, 2),
             'time'          => round($t, 2),
         );
-        if (is_null($k) or !isset($a[$k])) return $a;
-        else return $a[$k];
+        if (is_null($k) or !isset($a[$k])) 
+            return $a;
+        else 
+            return $a[$k];
     }
 
 

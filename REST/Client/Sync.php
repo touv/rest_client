@@ -152,5 +152,14 @@ class REST_Client_Sync extends REST_Client
         
         return $response;
     }
-    
+
+    /**
+     * Check if fire queue is overflowed 
+     * @return boolean
+     */
+    public function overflow()
+    {
+        return $this->handles > 0;
+    }
+
 }

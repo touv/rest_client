@@ -264,6 +264,21 @@ class REST_Client_Async extends REST_Client
         return $c;
     }
 
+    /**
+     * Check if fire queue is overflowed 
+     * @return boolean
+     */
+    public function overflow()
+    {
+        static $c;
+        ++$c;
+        if ($this->requests < $this->options['queue_size'])
+            return false;
+        elseif ($c % $this->options['queue_size'] != 0)
+            return false;
+        else 
+            return true;
+    }
 
 }
 

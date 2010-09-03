@@ -62,7 +62,7 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
                 ->setMethod('GET')->setUrl('/');
         for($i= 0;$i < $requests; $i++) {
             $this->async->fire($r);
-            if ($i > $clients) if ($response =  $this->async->fetch()) 
+            if ($this->async->overflow()) while ($response =  $this->async->fetch()) 
                 $this->assertEquals(200, $response->code);
         }
 

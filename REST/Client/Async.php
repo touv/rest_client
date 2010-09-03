@@ -64,6 +64,8 @@ class REST_Client_Async extends REST_Client
     protected $stack = array();
     protected $handles = 0;
     protected $responses = 0;
+    protected $waiting_responses = 0;
+    protected $waiting_requests= 0;
     protected $flag = false;
 
     /**
@@ -140,6 +142,7 @@ class REST_Client_Async extends REST_Client
         }
 
         $this->stack[$this->handles] = array(clone $request, null, null);
+        ++$this->waiting_requests;
         $this->tick();
         return $this->handles;
     }
@@ -157,6 +160,7 @@ class REST_Client_Async extends REST_Client
                 $this->stack[$k][2] =  null;
                 $this->stack[$k] = null;
                 unset($this->stack[$k]);
+                --$this->waiting_responses;
                 
                 // launch the fetch hooks
                 foreach($this->fetch_hook as $hook) {
@@ -191,11 +195,13 @@ class REST_Client_Async extends REST_Client
         $c = 0;
         if ($this->flag === false) {
             ++$this->loads;
-            if (($this->handles - $this->requests) >= $this->options['queue_size']
-                or ($this->requests !== 0 and  $this->requests === $this->responses)
-                or $fetch === true) {
+            if ($this->waiting_requests === 0) {
+                $this->flag = true;
+                ++$this->loads_null;
+            }
+            elseif ($fetch === true or $this->waiting_requests >= $this->options['queue_size']) {
                 if ($this->options['verbose']) echo 'LOAD : '.sprintf('%04d|%04d|%04d',$this->handles, $this->requests, $this->responses).' {';
-                foreach($this->stack as &$value) if (!is_null($value[0])) {
+                foreach($this->stack as &$value) if (!is_null($value[0])) { 
                     if ($c >= $this->options['queue_size']) break;
                     $value[1] = curl_init();
                     curl_setopt_array($value[1], $value[0]->toCurl());
@@ -203,6 +209,7 @@ class REST_Client_Async extends REST_Client
                     $status = curl_multi_exec($this->mh, $this->running);
                     $value[0] = null; // to save some memory, removes REST_Request instance from the stack
                     ++$c;
+                    --$this->waiting_requests;
                     ++$this->requests;
                     if ($this->options['verbose']) echo '-';
                 }
@@ -228,7 +235,7 @@ class REST_Client_Async extends REST_Client
                 elseif ($this->options['verbose']) echo 'X';
                 if (!$flush) break;
             } while ($this->running);
-            if ($this->running == 0) $this->flag = false;
+            if ($this->running == 0 or $c == 0) $this->flag = false;
             if ($this->options['verbose']) echo ($flush ? ']' : '>').' '.$c.'/'.$r.PHP_EOL;
             if ($c === 0) ++$this->pulls_null;
         }
@@ -260,24 +267,18 @@ class REST_Client_Async extends REST_Client
             curl_close($done['handle']);
             $this->stack[$k][1] = null;
             ++$this->responses;
+            ++$this->waiting_responses;
         }
         return $c;
     }
 
-    /**
+     /**
      * Check if fire queue is overflowed 
      * @return boolean
      */
     public function overflow()
     {
-        static $c;
-        ++$c;
-        if ($this->requests < $this->options['queue_size'])
-            return false;
-        elseif ($c % $this->options['queue_size'] != 0)
-            return false;
-        else 
-            return true;
+        return ! $this->waiting_responses < $this->options['queue_size'];
     }
 
 }

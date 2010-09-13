@@ -95,16 +95,16 @@ class REST_Client_Sync extends REST_Client
             $this->time = microtime(true);
         ++$this->loads;
 
-        $this->handles++; // create a fresh request identifier
+        self::$handles++; // create a fresh request identifier
         $request->setCurlOption(CURLOPT_USERAGENT, 'REST_Client/'.self::$version);
         
         // launch the fire hooks
         foreach($this->fire_hook as $hook) {
-            $ret = call_user_func($hook, $request, $this->handles, $this);
+            $ret = call_user_func($hook, $request, self::$handles, $this);
             // this hook want to stop the fire ?
             if ($ret === false) {
                 ++$this->loads_null;
-                $this->handles--;
+                self::$handles--;
                 return false;
             }
         }
@@ -125,10 +125,10 @@ class REST_Client_Sync extends REST_Client
                 $response->$name = curl_getinfo($this->handle, $const);
             }
         }
-        $response->id = $this->handles;
+        $response->id = self::$handles;
 
         $this->responses[] = $response; // append the response to the stack
-        return $this->handles; // return a unique identifier for the request
+        return self::$handles; // return a unique identifier for the request
     }
     
     /**
@@ -159,7 +159,7 @@ class REST_Client_Sync extends REST_Client
      */
     public function overflow()
     {
-        return $this->handles > 0;
+        return self::$handles > 0;
     }
 
 }

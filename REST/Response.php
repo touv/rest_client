@@ -57,6 +57,7 @@ class REST_Response
     public $id = null;
     public $headers = array();
     public $content = '';
+    public $status = '';
     public $code = 0;
     public $type;
     public $time;
@@ -67,7 +68,7 @@ class REST_Response
 
     function __construct($http_response, $errno = false, $error = '') 
     {
-        list($this->headers, $this->content) = self::parse_http_response($http_response);
+        list($this->headers, $this->content, $this->status) = self::parse_http_response($http_response);
         $this->errno = $errno;
         $this->error = $error;
     }
@@ -85,6 +86,7 @@ class REST_Response
     static function parse_http_response ($string) 
     {
         $headers = array();
+        $status = '';
         $content = '';
         $str = strtok($string, "\n");
         $h = null;
@@ -103,12 +105,15 @@ class REST_Response
                 else 
                     $headers[$headername] = $headervalue;
             }
+            elseif ($h !== false and $status === '') {
+                $status = $str;
+            }
             if ($h === false) {
                 $content .= $str."\n";
             }
             $str = strtok("\n");
         }
-        return array($headers, trim($content));
+        return array($headers, trim($content), $status);
     } 
 
 }

@@ -28,7 +28,7 @@ Usage
 
 require_once 'REST/Client.php';
 
-$rc = REST_EasyClient('rest.server.com', 8080);
+$rc = new  REST_EasyClient('rest.server.com', 8080);
 
 // GET Method
 $o = $rc->get('/resource/to/get');

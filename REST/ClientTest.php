@@ -34,7 +34,7 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
     function test_sync()
     {
         $r = REST_Request::newInstance()
-                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)
+                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)->setHttpProxy('')
                 ->setMethod('GET')->setUrl('/');
         $this->sync->fire($r);
         if ($resp = $this->sync->fetch()) {
@@ -78,7 +78,7 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
     function test_small_async()
     {
         $r = REST_Request::newInstance()
-                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)
+                ->setProtocol('http')->setHost($this->test_host)->setPort($this->test_port)->setHttpProxy('')
                 ->setMethod('GET')->setUrl('/');
         $id = $this->async->fire($r);
         if ($resp = $this->async->fetch()) {

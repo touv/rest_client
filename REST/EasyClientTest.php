@@ -3,7 +3,6 @@
 
 ini_set('include_path', dirname(__FILE__).'/../'.PATH_SEPARATOR.ini_get('include_path'));
 
-require_once 'PHPUnit/Framework.php';
 require_once 'REST/EasyClient.php';
 
 class REST_ClientTest extends PHPUnit_Framework_TestCase
@@ -19,7 +18,7 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
 
     function test_basic()
     {
-        $response = REST_EasyClient::newInstance()->get('/');
+        $response = REST_EasyClient::newInstance()->setHttpProxy('')->get('/');
         $this->assertEquals($response->code, 200);
         $this->assertContains('</html>', $response->content);
     }
@@ -27,7 +26,7 @@ class REST_ClientTest extends PHPUnit_Framework_TestCase
     function test_retro()
     {
         $client = new REST_EasyClient('localhost');
-        $response = $client->get('/');
+        $response = $client->setHttpProxy('')->get('/');
         $this->assertEquals($response->code, 200);
         $this->assertContains('</html>', $response->content);
     }

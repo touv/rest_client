@@ -108,9 +108,10 @@ class REST_Client_Sync extends REST_Client
                 return false;
             }
         }
-
         // configure curl client
-        curl_setopt_array($this->handle, $request->toCurl());
+        $opts = $request->toCurl();
+        foreach($opts as $k => $v)
+            curl_setopt($this->handle, $k, $v);
 
         if (!is_resource($this->handle)) {
             ++$this->loads_null;

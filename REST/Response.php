@@ -106,7 +106,7 @@ class REST_Response
                     $headers[$headername] = $headervalue;
             }
             elseif ($h !== false and $status === '') {
-                $status = $str;
+                $status = trim($str);
             }
             if ($h === false) {
                 $content .= $str."\n";

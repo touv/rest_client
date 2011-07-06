@@ -191,11 +191,11 @@ abstract class REST_Client
         $t = microtime(true) - $this->time;
         $a =  array(
             'requests'      => $this->requests,
-            'requests_avg'  => round($this->requests/$this->loads, 2),
-            'requests_sec'  => round($this->requests/$t, 2),
-            'fetchs_hit'    => round(($this->fetchs - $this->fetchs_null) / $this->fetchs, 2),
-            'pulls_hit'     => round(($this->pulls - $this->pulls_null) / $this->pulls, 2),
-            'loads_hit'     => round(($this->loads - $this->loads_null) / $this->loads, 2),
+            'requests_avg'  => $this->loads === 0 ? 0 : round($this->requests/$this->loads, 2),
+            'requests_sec'  => $t === 0 ? 0 : round($this->requests/$t, 2),
+            'fetchs_hit'    => $this->fetchs === 0 ? 0 : round(($this->fetchs - $this->fetchs_null) / $this->fetchs, 2),
+            'pulls_hit'     => $this->pulls === 0 ? 0 : round(($this->pulls - $this->pulls_null) / $this->pulls, 2),
+            'loads_hit'     => $this->loads === 0 ? 0 : round(($this->loads - $this->loads_null) / $this->loads, 2),
             'time'          => round($t, 2),
         );
         if (is_null($k) or !isset($a[$k])) 

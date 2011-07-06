@@ -235,28 +235,14 @@ class REST_Request
     public function toCurl()
     {
         $this->autoAttributes();
+        $options = $this->curl_options;
 
-        $options = $this->curl_options + array(
-            CURLOPT_PORT           => $this->port,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_HEADER         => true,
-            //            CURLOPT_USERAGENT      => 'REST/1.0',
-            //            CURLOPT_MAXREDIRS      => 0,
-            //            CURLOPT_HEADER         => false,
-            //            CURLOPT_FOLLOWLOCATION => true,
-            //            CURLOPT_ENCODING       => "",
-            //            CURLOPT_USERAGENT      => "spider",
-            //            CURLOPT_AUTOREFERER    => true,
-            //            CURLOPT_CONNECTTIMEOUT => 120,
-            //            CURLOPT_TIMEOUT        => 120,
-            //            CURLOPT_SSL_VERIFYHOST => 0,
-            //            CURLOPT_SSL_VERIFYPEER => false,
-            //            CURLOPT_VERBOSE        => 1
-        );
-        
-        $options[CURLOPT_URL]           = $this->protocol.'://'.$this->host.':'.$this->port.$this->url;
-        $options[CURLOPT_CUSTOMREQUEST] = $this->method;
+        $options[CURLOPT_PORT]           = $this->port;
+        $options[CURLOPT_RETURNTRANSFER] = true;
+        $options[CURLOPT_FOLLOWLOCATION] = false;
+        $options[CURLOPT_HEADER]         = true;
+        $options[CURLOPT_URL]            = $this->protocol.'://'.$this->host.':'.$this->port.$this->url;
+        $options[CURLOPT_CUSTOMREQUEST]  = $this->method;
         if (!is_null($this->user)) {
             $options[CURLOPT_USERPWD] = $this->user.':'.$this->password;
         }
@@ -268,7 +254,7 @@ class REST_Request
         if ($this->method === 'POST') {
             $options[CURLOPT_POST] = true;
         }
-        
+
         return $options;
     }
 
@@ -327,6 +313,10 @@ class REST_Request
             $this->setCurlOption(CURLOPT_PROXY,     $host);
             $this->setCurlOption(CURLOPT_PROXYPORT, $port);
         }
+        else {
+            $this->setCurlOption(CURLOPT_PROXY, '');
+        }
+
         return $this;
     }
 }
